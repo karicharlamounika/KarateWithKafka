@@ -1,0 +1,26 @@
+{
+  "ITEM_CREATED": {
+    "description": "Event fired when a new item is created",
+    "payload": {
+      "name": "string",
+      "quantity": "number"
+    },
+    "timestamp": "string (ISO-8601)"
+  },
+  "ITEM_UPDATED": {
+    "description": "Event fired when an item is updated",
+    "payload": {
+      "id": "number",
+      "name": "string",
+      "quantity": "number"
+    },
+    "timestamp": "string (ISO-8601)"
+  },
+  "ITEM_DELETED": {
+    "description": "Event fired when an item is deleted",
+    "payload": {
+      "id": "number"
+    },
+    "timestamp": "string (ISO-8601)"
+  }
+}

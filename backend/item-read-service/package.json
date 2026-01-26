@@ -1,0 +1,19 @@
+{
+  "name": "read-service",
+  "version": "1.0.0",
+  "description": "Read model service for items using CQRS pattern",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "consumer": "node consumer.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "kafkajs": "^2.2.4",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}

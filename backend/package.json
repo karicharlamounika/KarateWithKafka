@@ -1,0 +1,12 @@
+{
+  "name":"backend-microservices",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Backend microservices for item management using Kafka and CQRS",
+  "workspaces": [
+    "auth-service",
+    "item-service",
+    "item-writer-service",
+    "read-service"
+  ]
+}

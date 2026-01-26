@@ -1,0 +1,17 @@
+{
+  "name": "item-writer-service",
+  "version": "1.0.0",
+  "description": "Kafka consumer service that persists item events to database",
+  "main": "consumer.js",
+  "scripts": {
+    "start": "node consumer.js",
+    "dev": "nodemon consumer.js"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}

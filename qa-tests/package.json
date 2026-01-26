@@ -1,0 +1,11 @@
+{
+  "name": "qa-tests",
+  "private": true,
+  "devDependencies": {
+    "kafkajs": "^2.2.4"
+  },
+  "scripts": {
+    "test": "karate run features",
+    "test:ci": "karate run features --output reports"
+  }
+}
