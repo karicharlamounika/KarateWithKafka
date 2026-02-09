@@ -32,7 +32,10 @@ Background:
   """
 
   * def authHeaders = {}
-  * call read('classpath:kafkahelpers/kafka-start.feature') { topic: 'item-events' }
+  * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'item-events' }
+
+  # Ensure user exists before login
+  * call read('classpath:karatehelpers/register-user.feature')
 
 Scenario: User updates an item and system propagates changes via Kafka
 
@@ -63,7 +66,7 @@ Scenario: User updates an item and system propagates changes via Kafka
 
     # Step 4: Validate Kafka UPDATE event
     * def updateEvent =
-      call read('classpath:kafkahelpers/kafka-wait.feature')
+      call read('classpath:karatehelpers/kafka-wait.feature')
       { itemId: itemId, eventType: 'ITEM_UPDATED', timeout: 15000 }
     Then match updateEvent.eventType == 'ITEM_UPDATED'
     And match updateEvent.data.id == itemId

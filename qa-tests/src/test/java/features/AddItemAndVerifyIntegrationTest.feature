@@ -25,9 +25,18 @@ Background:
   # Headers container
   * def authHeaders = {}
 
+<<<<<<< codex/analyze-qa-tests-branch-and-suggest-changes-bmj1qs
+  # Ensure user exists before login
+  * call read('classpath:karatehelpers/register-user.feature')
+
+  # Step 0: Start Kafka Consumer BEFORE API calls
+  * print 'Starting Kafka consumer...'
+  * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'item-events' }
+=======
   # Step 0: Start Kafka Consumer BEFORE API calls
   * print 'Starting Kafka consumer...'
   * call read('classpath:kafkahelpers/kafka-start.feature') { topic: 'item-events' }
+>>>>>>> qa-tests
   * karate.log('Kafka consumer initialized')
 
   Scenario: User adds an item and system updates via Kafka
@@ -52,7 +61,11 @@ Background:
 
     # Step 3: Validate Kafka Event (consumer was started in Background)
     * def kafkaMessage =
+<<<<<<< codex/analyze-qa-tests-branch-and-suggest-changes-bmj1qs
+      call read('classpath:karatehelpers/kafka-wait.feature')
+=======
       call read('classpath:kafkahelpers/kafka-wait.feature')
+>>>>>>> qa-tests
       { itemId: itemId, eventType: 'ITEM_ADDED', timeout: 15000 }
     Then match kafkaMessage.eventType == 'ITEM_ADDED'
     And match kafkaMessage.data.id == itemId

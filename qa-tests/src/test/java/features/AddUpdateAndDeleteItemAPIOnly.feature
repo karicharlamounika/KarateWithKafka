@@ -32,6 +32,9 @@ Background:
 
   * def authHeaders = {}
 
+  # Ensure user exists before login
+  * call read('classpath:karatehelpers/register-user.feature')
+
 Scenario: User adds, updates, and deletes an item successfully
 
   # Step 1: Login

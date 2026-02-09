@@ -5,7 +5,11 @@ Background:
   * def baseUrl = karate.config.baseUrl
 
   # Kafka configuration
+<<<<<<< codex/analyze-qa-tests-branch-and-suggest-changes-bmj1qs
+  * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'item-events' }
+=======
   * call read('classpath:kafkahelpers/kafka-start.feature') { topic: 'item-events' }
+>>>>>>> qa-tests
 
   # Login payload
   * def loginPayload =
@@ -26,6 +30,9 @@ Background:
   """
 
   * def authHeaders = {}
+
+  # Ensure user exists before login
+  * call read('classpath:karatehelpers/register-user.feature')
 
   Scenario: User deletes an item and system propagates changes via Kafka
 
@@ -53,7 +60,7 @@ Background:
 
     # Step 4: Validate Kafka DELETE event
     * def deleteEvent =
-      call read('classpath:kafkahelpers/kafka-wait.feature')
+      call read('classpath:karatehelpers/kafka-wait.feature')
       { itemId: itemId, eventType: 'ITEM_DELETED', timeout: 15000 }
     Then match deleteEvent.eventType == 'ITEM_DELETED'
     And match deleteEvent.data.id == itemId
