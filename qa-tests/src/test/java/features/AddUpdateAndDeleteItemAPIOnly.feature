@@ -7,8 +7,8 @@ Background:
   * def loginPayload =
   """
   {
-    "email": "testuser@example.com",
-    "password": "Password123"
+    "email": "#(karate.config.testUser.email)",
+    "password": "#(karate.config.testUser.password)"
   }
   """
 
