@@ -7,8 +7,8 @@ Background:
   * def loginPayload =
   """
   {
-    "email": "testuser@example.com",
-    "password": "Password123"
+    "email": "#(karate.config.testUser.email)",
+    "password": "#(karate.config.testUser.password)"
   }
   """
 
@@ -31,6 +31,9 @@ Background:
   """
 
   * def authHeaders = {}
+
+  # Ensure user exists before login
+  * call read('classpath:karatehelpers/register-user.feature')
 
 Scenario: User adds, updates, and deletes an item successfully
 
