@@ -32,6 +32,7 @@ Feature: Update Item flow with Kafka and DB verification
     """
 
     * def authHeaders = {}
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'item-events' }
 
   Scenario: User updates an item and system propagates changes via Kafka
 
@@ -54,8 +55,8 @@ Feature: Update Item flow with Kafka and DB verification
     # Step 3: Start Kafka consumer BEFORE update
     * print 'Starting Kafka consumer for UPDATE event'
     * def updateEvent =
-      call read('classpath:utils/kafkaConsumer.js')
-      { topic: 'item-events', itemId: itemId, timeout: 15000 }
+      call read('classpath:helpers/kafka-wait.feature')
+      { itemId: itemId, eventType: 'ITEM_UPDATED', timeout: 15000 }
 
     # Step 4: Update Item
     Given url baseUrl + '/items/' + itemId

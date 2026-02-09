@@ -6,6 +6,7 @@ Feature: Delete Item flow with Kafka and DB verification
 
   # Kafka configuration
   * def kafkaBootstrap = karate.config.kafka.bootstrap
+  * call read('classpath:helpers/kafka-start.feature') { topic: 'item-events' }
 
     # Login payload
     * def loginPayload =
@@ -48,8 +49,8 @@ Feature: Delete Item flow with Kafka and DB verification
     # Step 3: Start Kafka consumer BEFORE delete
     * print 'Starting Kafka consumer for DELETE event'
     * def deleteEvent =
-      call read('classpath:utils/kafkaConsumer.js')
-      { topic: 'item-events', itemId: itemId, timeout: 15000 }
+      call read('classpath:helpers/kafka-wait.feature')
+      { itemId: itemId, eventType: 'ITEM_DELETED', timeout: 15000 }
 
     # Step 4: Delete Item
     Given url baseUrl + '/items/' + itemId
