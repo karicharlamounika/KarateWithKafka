@@ -14,6 +14,8 @@ function fn() {
     readDbUrl: 'jdbc:sqlite:/data/items_read.db',
 
     testUser: {
+      firstName: 'Test',
+      lastName: 'User',
       email: 'testuser@example.com',
       password: 'Password123'
     }
