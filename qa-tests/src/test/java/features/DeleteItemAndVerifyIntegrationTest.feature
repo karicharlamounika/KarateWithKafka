@@ -5,7 +5,11 @@ Background:
   * def baseUrl = karate.config.baseUrl
 
   # Kafka configuration
+<<<<<<< codex/analyze-qa-tests-branch-and-suggest-changes-bmj1qs
   * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'item-events' }
+=======
+  * call read('classpath:kafkahelpers/kafka-start.feature') { topic: 'item-events' }
+>>>>>>> qa-tests
 
   # Login payload
   * def loginPayload =
