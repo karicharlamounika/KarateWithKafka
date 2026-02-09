@@ -1,32 +1,31 @@
 Feature: Delete Item flow with Kafka and DB verification
 
-  Background:
- # API Gateway base URL
+Background:
+  # API Gateway base URL
   * def baseUrl = karate.config.baseUrl
 
   # Kafka configuration
-  * def kafkaBootstrap = karate.config.kafka.bootstrap
-  * call read('classpath:helpers/kafka-start.feature') { topic: 'item-events' }
+  * call read('classpath:kafkahelpers/kafka-start.feature') { topic: 'item-events' }
 
-    # Login payload
-    * def loginPayload =
-    """
-    {
-      "email": "testuser@example.com",
-      "password": "Password123"
-    }
-    """
+  # Login payload
+  * def loginPayload =
+  """
+  {
+    "email": "#(karate.config.testUser.email)",
+    "password": "#(karate.config.testUser.password)"
+  }
+  """
 
-    # Item payload for setup
-    * def itemPayload =
-    """
-    {
-      "name": "Keyboard",
-      "quantity": 5
-    }
-    """
+  # Item payload for setup
+  * def itemPayload =
+  """
+  {
+    "name": "Keyboard",
+    "quantity": 5
+  }
+  """
 
-    * def authHeaders = {}
+  * def authHeaders = {}
 
   Scenario: User deletes an item and system propagates changes via Kafka
 
@@ -46,23 +45,20 @@ Feature: Delete Item flow with Kafka and DB verification
     Then status 201
     * def itemId = response.id
 
-    # Step 3: Start Kafka consumer BEFORE delete
-    * print 'Starting Kafka consumer for DELETE event'
-    * def deleteEvent =
-      call read('classpath:helpers/kafka-wait.feature')
-      { itemId: itemId, eventType: 'ITEM_DELETED', timeout: 15000 }
-
-    # Step 4: Delete Item
+    # Step 3: Delete Item
     Given url baseUrl + '/items/' + itemId
     And headers authHeaders
     When method DELETE
     Then status 204
 
-    # Step 5: Validate Kafka DELETE event
+    # Step 4: Validate Kafka DELETE event
+    * def deleteEvent =
+      call read('classpath:kafkahelpers/kafka-wait.feature')
+      { itemId: itemId, eventType: 'ITEM_DELETED', timeout: 15000 }
     Then match deleteEvent.eventType == 'ITEM_DELETED'
     And match deleteEvent.data.id == itemId
 
-    # Step 6: Validate DB state (item should NOT exist)
+    # Step 5: Validate DB state (item should NOT exist)
     * def dbItem =
       call read('classpath:utils/dbQuery.js') { id: itemId }
 
