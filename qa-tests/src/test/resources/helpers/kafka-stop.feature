@@ -1,21 +1,9 @@
-Feature: Stop Kafka
+@Ignore
+Feature: Stop Kafka consumer
 
-    Background:
-        * def kafkaHelper = Java.type('path.to.kafkatesthelper')
+  Background:
+    * def KafkaTestHelper = Java.type('utils.KafkaTestHelper')
 
-    Scenario: Stop Kafka Broker
-        Given I have started Kafka
-        When I stop Kafka
-        Then Kafka should be stopped successfully
-
-    Given def startKafka = function() {
-        kafkaHelper.startKafka()
-    }
-
-    When def stopKafka = function() {
-        kafkaHelper.stopKafka()
-    }
-
-    Then def verifyKafkaStopped = function() {
-        // Add verification logic here
-    }
+  Scenario: Stop Kafka consumer
+    * KafkaTestHelper.stopConsumer()
+    * print 'Kafka consumer stopped successfully'

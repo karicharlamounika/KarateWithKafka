@@ -6,7 +6,7 @@ Background:
 
   # Kafka configuration
   * def kafkaBootstrap = karate.config.kafka.bootstrap
-  
+
 
     # User login payload
     * def loginPayload =
@@ -30,9 +30,8 @@ Background:
     * def authHeaders = {}
 
     # Step 0: Start Kafka Consumer BEFORE API calls
-    # Assuming kafkaConsumer.js has a startConsumer() function that returns a promise
     * print 'Starting Kafka consumer...'
-    * def kafkaConsumerPromise = call read('classpath:java/utils/KafkaTestHelper.java') { topic: 'item-events' }
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'item-events' }
     * karate.log('Kafka consumer initialized')
 
   Scenario: User adds an item and system updates via Kafka
@@ -56,13 +55,15 @@ Background:
     * def itemId = response.id
 
     # Step 3: Validate Kafka Event (consumer was started in Background)
-    * def kafkaMessage = call read('classpath:java/utils/KafkaTestHelper.java') { topic: 'item-events', itemId: itemId }
+    * def kafkaMessage =
+      call read('classpath:helpers/kafka-wait.feature')
+      { itemId: itemId, eventType: 'ITEM_ADDED', timeout: 15000 }
     Then match kafkaMessage.eventType == 'ITEM_ADDED'
     And match kafkaMessage.data.id == itemId
     And match kafkaMessage.data.name == 'Laptop'
     And match kafkaMessage.data.quantity == 10
 
     # Step 4: Validate DB Update
-    * def dbItem = call read('classpath:java/utils/dbQuery.js') { id: itemId }
+    * def dbItem = call read('classpath:utils/dbQuery.js') { id: itemId }
     Then match dbItem.name == 'Laptop'
     And match dbItem.quantity == 10
