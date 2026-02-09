@@ -1,0 +1,8 @@
+{
+  "baseUrl" : "http://localhost:5080",
+  "kafkaServer" : {
+    "bootstrap.servers": "localhost:29093",
+    "username": "test",
+    "password": "test"
+  }
+}

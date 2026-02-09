@@ -133,7 +133,7 @@
     <build>
         <testResources>
             <testResource>
-                <directory>src/test/resources</directory>
+                <directory>src/test/java</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
