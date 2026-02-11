@@ -31,8 +31,8 @@ Background:
   }
   """
 
-  * def authHeaders = {}
-  * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'item-events' }
+    * def authHeaders = {}
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
 
   # Ensure user exists before login
   * call read('classpath:karatehelpers/register-user.feature')

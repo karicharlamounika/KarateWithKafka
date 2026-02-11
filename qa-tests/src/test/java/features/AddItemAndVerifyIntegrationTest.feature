@@ -28,10 +28,13 @@ Background:
   # Ensure user exists before login
   * call read('classpath:karatehelpers/register-user.feature')
 
-  # Step 0: Start Kafka Consumer BEFORE API calls
-  * print 'Starting Kafka consumer...'
-  * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'item-events' }
-  * karate.log('Kafka consumer initialized')
+    # Headers container
+    * def authHeaders = {}
+
+    # Step 0: Start Kafka Consumer BEFORE API calls
+    * print 'Starting Kafka consumer...'
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
+    * karate.log('Kafka consumer initialized')
 
   Scenario: User adds an item and system updates via Kafka
     # Step 1: Login user

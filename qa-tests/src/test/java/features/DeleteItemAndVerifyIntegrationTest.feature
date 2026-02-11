@@ -5,7 +5,8 @@ Background:
   * def baseUrl = karate.config.baseUrl
 
   # Kafka configuration
-  * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'item-events' }
+  * def kafkaBootstrap = karate.config.kafka.bootstrap
+  * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
 
   # Login payload
   * def loginPayload =
