@@ -1,40 +1,43 @@
 Feature: Update Item flow with Kafka and DB verification
 
-  Background:
-    # Base URL via API Gateway
-    * def baseUrl = karate.properties['baseUrl'] || 'http://localhost:8080'
+Background:
+  # Base URL via API Gateway
+  * def baseUrl = karate.config.baseUrl
 
-    # Login payload
-    * def loginPayload =
-    """
-    {
-      "email": "testuser@example.com",
-      "password": "Password123"
-    }
-    """
+  # Login payload
+  * def loginPayload =
+  """
+  {
+    "email": "#(karate.config.testUser.email)",
+    "password": "#(karate.config.testUser.password)"
+  }
+  """
 
-    # Initial item payload (setup)
-    * def createItemPayload =
-    """
-    {
-      "name": "Monitor",
-      "quantity": 5
-    }
-    """
+  # Initial item payload (setup)
+  * def createItemPayload =
+  """
+  {
+    "name": "Monitor",
+    "quantity": 5
+  }
+  """
 
-    # Updated item payload
-    * def updateItemPayload =
-    """
-    {
-      "name": "Monitor-HD",
-      "quantity": 10
-    }
-    """
+  # Updated item payload
+  * def updateItemPayload =
+  """
+  {
+    "name": "Monitor-HD",
+    "quantity": 10
+  }
+  """
 
     * def authHeaders = {}
     * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
 
-  Scenario: User updates an item and system propagates changes via Kafka
+  # Ensure user exists before login
+  * call read('classpath:karatehelpers/register-user.feature')
+
+Scenario: User updates an item and system propagates changes via Kafka
 
     # Step 1: Login
     Given url baseUrl + '/auth/login'
@@ -52,13 +55,7 @@ Feature: Update Item flow with Kafka and DB verification
     Then status 201
     * def itemId = response.id
 
-    # Step 3: Start Kafka consumer BEFORE update
-    * print 'Starting Kafka consumer for UPDATE event'
-    * def updateEvent =
-      call read('classpath:helpers/kafka-wait.feature')
-      { itemId: itemId, eventType: 'ITEM_UPDATED', timeout: 15000 }
-
-    # Step 4: Update Item
+    # Step 3: Update Item
     Given url baseUrl + '/items/' + itemId
     And headers authHeaders
     And request updateItemPayload
@@ -67,13 +64,16 @@ Feature: Update Item flow with Kafka and DB verification
     And match response.name == 'Monitor-HD'
     And match response.quantity == 10
 
-    # Step 5: Validate Kafka UPDATE event
+    # Step 4: Validate Kafka UPDATE event
+    * def updateEvent =
+      call read('classpath:karatehelpers/kafka-wait.feature')
+      { itemId: itemId, eventType: 'ITEM_UPDATED', timeout: 15000 }
     Then match updateEvent.eventType == 'ITEM_UPDATED'
     And match updateEvent.data.id == itemId
     And match updateEvent.data.name == 'Monitor-HD'
     And match updateEvent.data.quantity == 10
 
-    # Step 6: Validate DB state (read model)
+    # Step 5: Validate DB state (read model)
     * def dbItem =
       call read('classpath:utils/dbQuery.js') { id: itemId }
 
