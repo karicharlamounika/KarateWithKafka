@@ -32,7 +32,7 @@ Feature: Update Item flow with Kafka and DB verification
     """
 
     * def authHeaders = {}
-    * call read('classpath:helpers/kafka-start.feature') { topic: 'item-events' }
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
 
   Scenario: User updates an item and system propagates changes via Kafka
 

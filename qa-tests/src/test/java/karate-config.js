@@ -7,8 +7,7 @@ function fn() {
 
     kafka: {
       bootstrap: 'localhost:9092',
-      topic: 'item-events',
-      groupId: 'karate-test-group'
+      topic: 'items-events'
     },
 
     readDbUrl: 'jdbc:sqlite:/data/items_read.db',

@@ -1,0 +1,37 @@
+name: QA Tests (Docker Compose)
+
+on:
+  push:
+    branches:
+      - qa-tests
+      - qa-tests-runner-docker
+  pull_request:
+    branches:
+      - qa-tests
+
+jobs:
+  qa-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Docker Compose command
+        run: |
+          if docker compose version >/dev/null 2>&1; then
+            echo "COMPOSE_CMD=docker compose" >> "$GITHUB_ENV"
+          elif command -v docker-compose >/dev/null 2>&1; then
+            echo "COMPOSE_CMD=docker-compose" >> "$GITHUB_ENV"
+          else
+            echo "Docker Compose not found on runner." >&2
+            exit 1
+          fi
+
+      - name: Build and run QA tests
+        run: |
+          $COMPOSE_CMD up --build --abort-on-container-exit --exit-code-from qa-tests
+
+      - name: Shutdown stack
+        if: always()
+        run: |
+          $COMPOSE_CMD down -v

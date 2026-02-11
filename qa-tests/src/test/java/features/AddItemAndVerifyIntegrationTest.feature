@@ -31,7 +31,7 @@ Background:
 
     # Step 0: Start Kafka Consumer BEFORE API calls
     * print 'Starting Kafka consumer...'
-    * call read('classpath:helpers/kafka-start.feature') { topic: 'item-events' }
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
     * karate.log('Kafka consumer initialized')
 
   Scenario: User adds an item and system updates via Kafka
