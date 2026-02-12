@@ -1,16 +1,23 @@
 const { Kafka } = require("kafkajs");
 const db = require("./db");
 
+const brokers = (process.env.KAFKA_BROKERS || "localhost:9092")
+  .split(",")
+  .map((broker) => broker.trim())
+  .filter(Boolean);
+const topic = process.env.KAFKA_TOPIC || "items-events";
+const groupId = process.env.KAFKA_GROUP_ID || "read-service-group";
+
 const kafka = new Kafka({
   clientId: "read-service",
-  brokers: ["localhost:9092"]
+  brokers
 });
 
-const consumer = kafka.consumer({ groupId: "read-service-group" });
+const consumer = kafka.consumer({ groupId });
 
 async function startConsumer() {
   await consumer.connect();
-  await consumer.subscribe({ topic: "items-events", fromBeginning: true });
+  await consumer.subscribe({ topic, fromBeginning: true });
 
   console.log("📝 Read-service Kafka consumer started");
 

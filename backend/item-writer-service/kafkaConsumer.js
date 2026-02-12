@@ -1,16 +1,23 @@
 const { Kafka } = require("kafkajs");
 const db = require("./db");
 
+const brokers = (process.env.KAFKA_BROKERS || "localhost:9092")
+  .split(",")
+  .map((broker) => broker.trim())
+  .filter(Boolean);
+const topic = process.env.KAFKA_TOPIC || "items-events";
+const groupId = process.env.KAFKA_GROUP_ID || "item-writer-group";
+
 const kafka = new Kafka({
   clientId: "item-writer",
-  brokers: ["localhost:9092"],
+  brokers,
 });
 
-const consumer = kafka.consumer({ groupId: "item-writer-group" });
+const consumer = kafka.consumer({ groupId });
 
 async function start() {
   await consumer.connect();
-  await consumer.subscribe({ topic: "items-events", fromBeginning: true });
+  await consumer.subscribe({ topic, fromBeginning: true });
 
   console.log("📝 Item Writer Service started");
 
