@@ -1,37 +1,39 @@
 Feature: Add Item flow with Kafka and DB verification
 
-Background:
-  # API Gateway base URL
-  * def baseUrl = karate.config.baseUrl
-
-  # Kafka configuration
-  * def kafkaBootstrap = karate.config.kafka.bootstrap
-
+  Background:
+    # API Gateway base URL
+    * def baseUrl = karate.config.baseUrl
 
     # User login payload
     * def loginPayload =
-    """
-    {
-      "email": "testuser@example.com",
-      "password": "Password123"
-    }
-    """
+      """
+      {
+        "email": "#(karate.config.testUser.email)",
+        "password": "#(karate.config.testUser.password)"
+      }
+      """
 
     # Item payload
     * def itemPayload =
-    """
-    {
-      "name": "Laptop",
-      "quantity": 10
-    }
-    """
+      """
+      {
+        "name": "Laptop",
+        "quantity": 10
+      }
+      """
+
+    # Headers container
+    * def authHeaders = {}
+
+    # Ensure user exists before login
+    * call read('classpath:karatehelpers/register-user.feature')
 
     # Headers container
     * def authHeaders = {}
 
     # Step 0: Start Kafka Consumer BEFORE API calls
     * print 'Starting Kafka consumer...'
-    * call read('classpath:helpers/kafka-start.feature') { topic: 'item-events' }
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
     * karate.log('Kafka consumer initialized')
 
   Scenario: User adds an item and system updates via Kafka
@@ -56,8 +58,8 @@ Background:
 
     # Step 3: Validate Kafka Event (consumer was started in Background)
     * def kafkaMessage =
-      call read('classpath:helpers/kafka-wait.feature')
-      { itemId: itemId, eventType: 'ITEM_ADDED', timeout: 15000 }
+    call read('classpath:karatehelpers/kafka-wait.feature')
+    { itemId: itemId, eventType: 'ITEM_ADDED', timeout: 15000 }
     Then match kafkaMessage.eventType == 'ITEM_ADDED'
     And match kafkaMessage.data.id == itemId
     And match kafkaMessage.data.name == 'Laptop'

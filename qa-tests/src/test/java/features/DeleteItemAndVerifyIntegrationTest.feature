@@ -1,35 +1,35 @@
 Feature: Delete Item flow with Kafka and DB verification
 
-Background:
-  # API Gateway base URL
-  * def baseUrl = karate.config.baseUrl
+  Background:
+    # API Gateway base URL
+    * def baseUrl = karate.config.baseUrl
 
-  # Kafka configuration
-  * def kafkaBootstrap = karate.config.kafka.bootstrap
-  * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
+    # Kafka configuration
+    * def kafkaBootstrap = karate.config.kafka.bootstrap
+    * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
 
-  # Login payload
-  * def loginPayload =
-  """
-  {
-    "email": "#(karate.config.testUser.email)",
-    "password": "#(karate.config.testUser.password)"
-  }
-  """
+    # Login payload
+    * def loginPayload =
+      """
+      {
+        "email": "#(karate.config.testUser.email)",
+        "password": "#(karate.config.testUser.password)"
+      }
+      """
 
-  # Item payload for setup
-  * def itemPayload =
-  """
-  {
-    "name": "Keyboard",
-    "quantity": 5
-  }
-  """
+    # Item payload for setup
+    * def itemPayload =
+      """
+      {
+        "name": "Keyboard",
+        "quantity": 5
+      }
+      """
 
-  * def authHeaders = {}
+    * def authHeaders = {}
 
-  # Ensure user exists before login
-  * call read('classpath:karatehelpers/register-user.feature')
+    # Ensure user exists before login
+    * call read('classpath:karatehelpers/register-user.feature')
 
   Scenario: User deletes an item and system propagates changes via Kafka
 
@@ -57,13 +57,13 @@ Background:
 
     # Step 4: Validate Kafka DELETE event
     * def deleteEvent =
-      call read('classpath:karatehelpers/kafka-wait.feature')
-      { itemId: itemId, eventType: 'ITEM_DELETED', timeout: 15000 }
+    call read('classpath:karatehelpers/kafka-wait.feature')
+    { itemId: itemId, eventType: 'ITEM_DELETED', timeout: 15000 }
     Then match deleteEvent.eventType == 'ITEM_DELETED'
     And match deleteEvent.data.id == itemId
 
     # Step 5: Validate DB state (item should NOT exist)
     * def dbItem =
-      call read('classpath:utils/dbQuery.js') { id: itemId }
+    call read('classpath:utils/dbQuery.js') { id: itemId }
 
     Then match dbItem == null
