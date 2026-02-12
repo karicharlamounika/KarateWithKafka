@@ -75,7 +75,9 @@ Feature: Update Item flow with Kafka and DB verification
     And match updateEvent.data.quantity == 10
 
     # Step 5: Validate DB state (read model)
-    * def dbItem = call read('classpath:utils/dbQuery.js') { id: itemId }
-
+    * def dbItem = call read('classpath:utils/dbQuery.js')
+      """
+      { id: '#(itemId)' }
+      """
     Then match dbItem.name == 'Monitor-HD'
     And match dbItem.quantity == 10

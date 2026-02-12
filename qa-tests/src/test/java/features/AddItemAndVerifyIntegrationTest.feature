@@ -67,6 +67,9 @@ Feature: Add Item flow with Kafka and DB verification
     And match kafkaMessage.data.quantity == 10
 
     # Step 4: Validate DB Update
-    * def dbItem = call read('classpath:utils/dbQuery.js') { id: itemId }
+    * def dbItem = call read('classpath:utils/dbQuery.js') 
+      """
+      { id: '#(itemId)' }
+      """
     Then match dbItem.name == 'Laptop'
     And match dbItem.quantity == 10

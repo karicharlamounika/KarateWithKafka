@@ -64,5 +64,8 @@ Feature: Delete Item flow with Kafka and DB verification
     And match deleteEvent.data.id == itemId
 
     # Step 5: Validate DB state (item should NOT exist)
-    * def dbItem =call read('classpath:utils/dbQuery.js') { id: itemId }
+    * def dbItem = call read('classpath:utils/dbQuery.js')
+      """
+      { id: '#(itemId)' }
+      """
     Then match dbItem == null
