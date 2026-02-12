@@ -1,10 +1,16 @@
 const { Kafka } = require("kafkajs");
 
+<<<<<<< codex/analyze-qa-tests-branch-and-suggest-changes-8985u6
 const brokers = (process.env.KAFKA_BROKERS || "localhost:9092")
   .split(",")
   .map((broker) => broker.trim())
   .filter(Boolean);
 const topic = process.env.KAFKA_TOPIC || "items-events";
+=======
+const brokers = process.env.KAFKA_BROKERS
+  ? process.env.KAFKA_BROKERS.split(",")
+  : ["localhost:9092"];
+>>>>>>> qa-tests
 
 const kafka = new Kafka({
   clientId: "item-service",
@@ -34,6 +40,7 @@ async function publishEvent(eventType, payload) {
     timestamp: new Date().toISOString(),
   };
 
+  const topic = process.env.KAFKA_TOPIC || "items-events";
   await producer.send({
     topic,
     messages: [
