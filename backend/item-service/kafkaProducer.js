@@ -34,6 +34,7 @@ async function publishEvent(eventType, payload) {
     timestamp: new Date().toISOString(),
   };
 
+  const topic = process.env.KAFKA_TOPIC || "items-events";
   await producer.send({
     topic,
     messages: [
