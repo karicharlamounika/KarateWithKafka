@@ -1,8 +1,10 @@
 const { Kafka } = require("kafkajs");
 
-const brokers = process.env.KAFKA_BROKERS
-  ? process.env.KAFKA_BROKERS.split(",")
-  : ["localhost:9092"];
+const brokers = (process.env.KAFKA_BROKERS || "localhost:9092")
+  .split(",")
+  .map((broker) => broker.trim())
+  .filter(Boolean);
+const topic = process.env.KAFKA_TOPIC || "items-events";
 
 const kafka = new Kafka({
   clientId: "item-service",
