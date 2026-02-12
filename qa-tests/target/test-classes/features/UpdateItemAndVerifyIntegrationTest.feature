@@ -32,8 +32,10 @@ Feature: Update Item flow with Kafka and DB verification
       """
 
     * def authHeaders = {}
-    * call read('classpath:helpers/kafka-start.feature') { topic: 'items-events' }
-
+    * call read('classpath:helpers/kafka-start.feature') 
+      """
+      { topic: 'items-events' }
+      """
     # Ensure user exists before login
     * call read('classpath:karatehelpers/register-user.feature')
 
