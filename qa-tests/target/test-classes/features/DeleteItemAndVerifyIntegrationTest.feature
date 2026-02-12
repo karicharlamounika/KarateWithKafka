@@ -56,14 +56,13 @@ Feature: Delete Item flow with Kafka and DB verification
     Then status 204
 
     # Step 4: Validate Kafka DELETE event
-    * def deleteEvent =
-    call read('classpath:karatehelpers/kafka-wait.feature')
-    { itemId: itemId, eventType: 'ITEM_DELETED', timeout: 15000 }
+    * def deleteEvent = call read('classpath:karatehelpers/kafka-wait.feature')
+      """
+      { itemId: '#(itemId)', eventType: 'ITEM_DELETED', timeout: 15000 }
+      """
     Then match deleteEvent.eventType == 'ITEM_DELETED'
     And match deleteEvent.data.id == itemId
 
     # Step 5: Validate DB state (item should NOT exist)
-    * def dbItem =
-    call read('classpath:utils/dbQuery.js') { id: itemId }
-
+    * def dbItem =call read('classpath:utils/dbQuery.js') { id: itemId }
     Then match dbItem == null

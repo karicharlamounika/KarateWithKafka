@@ -65,17 +65,17 @@ Feature: Update Item flow with Kafka and DB verification
     And match response.quantity == 10
 
     # Step 4: Validate Kafka UPDATE event
-    * def updateEvent =
-    call read('classpath:karatehelpers/kafka-wait.feature')
-    { itemId: itemId, eventType: 'ITEM_UPDATED', timeout: 15000 }
+    * def updateEvent = call read('classpath:karatehelpers/kafka-wait.feature')
+      """
+      { itemId: '#(itemId)', eventType: 'ITEM_UPDATED', timeout: 15000 }
+      """
     Then match updateEvent.eventType == 'ITEM_UPDATED'
     And match updateEvent.data.id == itemId
     And match updateEvent.data.name == 'Monitor-HD'
     And match updateEvent.data.quantity == 10
 
     # Step 5: Validate DB state (read model)
-    * def dbItem =
-    call read('classpath:utils/dbQuery.js') { id: itemId }
+    * def dbItem = call read('classpath:utils/dbQuery.js') { id: itemId }
 
     Then match dbItem.name == 'Monitor-HD'
     And match dbItem.quantity == 10

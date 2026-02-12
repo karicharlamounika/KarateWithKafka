@@ -57,9 +57,10 @@ Feature: Add Item flow with Kafka and DB verification
     * def itemId = response.id
 
     # Step 3: Validate Kafka Event (consumer was started in Background)
-    * def kafkaMessage =
-    call read('classpath:karatehelpers/kafka-wait.feature')
-    { itemId: itemId, eventType: 'ITEM_ADDED', timeout: 15000 }
+    * def kafkaMessage = call read('classpath:karatehelpers/kafka-wait.feature')
+      """
+      { itemId: '#(itemId)', eventType: 'ITEM_ADDED', timeout: 15000 }
+      """
     Then match kafkaMessage.eventType == 'ITEM_ADDED'
     And match kafkaMessage.data.id == itemId
     And match kafkaMessage.data.name == 'Laptop'
