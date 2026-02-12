@@ -1,8 +1,14 @@
 const { Kafka } = require("kafkajs");
 
+const brokers = (process.env.KAFKA_BROKERS || "localhost:9092")
+  .split(",")
+  .map((broker) => broker.trim())
+  .filter(Boolean);
+const topic = process.env.KAFKA_TOPIC || "items-events";
+
 const kafka = new Kafka({
   clientId: "item-service",
-  brokers: ["localhost:9092"], // later move to env var
+  brokers,
 });
 
 const producer = kafka.producer();
@@ -29,7 +35,7 @@ async function publishEvent(eventType, payload) {
   };
 
   await producer.send({
-    topic: "items-events",
+    topic,
     messages: [
       {
         key: eventType,
