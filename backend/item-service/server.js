@@ -9,7 +9,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const PORT = 5000;
-const AUTH_SECRET_KEY = "auth-secret-key"; // must match auth-service
+const AUTH_SECRET_KEY = process.env.AUTH_SECRET_KEY || "auth-secret-key";
 
 // Connect Kafka Producer
 connectProducer().catch(console.error);

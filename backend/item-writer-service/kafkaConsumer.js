@@ -15,7 +15,9 @@ const kafka = new Kafka({
 
 const consumer = kafka.consumer({ groupId });
 
-async function start() {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function runConsumer() {
   await consumer.connect();
   await consumer.subscribe({ topic, fromBeginning: true });
 
@@ -36,22 +38,44 @@ async function start() {
         case "ITEM_UPDATED":
           db.run(
             "UPDATE items SET name = ?, quantity = ? WHERE id = ?",
-            [
-              event.payload.name,
-              event.payload.quantity,
-              event.payload.id,
-            ]
+            [event.payload.name, event.payload.quantity, event.payload.id]
           );
           break;
 
         case "ITEM_DELETED":
-          db.run("DELETE FROM items WHERE id = ?", [
-            event.payload.id,
-          ]);
+          db.run("DELETE FROM items WHERE id = ?", [event.payload.id]);
           break;
       }
     },
   });
 }
 
-start().catch(console.error);
+async function startConsumerWithRetry(maxAttempts = 20) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await runConsumer();
+      return;
+    } catch (error) {
+      const retriable = error?.retriable ||
+        error?.type === "UNKNOWN_TOPIC_OR_PARTITION" ||
+        error?.name === "KafkaJSProtocolError";
+
+      console.error(`Kafka consumer start failed (attempt ${attempt}/${maxAttempts})`, error.message || error);
+
+      if (!retriable || attempt === maxAttempts) {
+        process.exitCode = 1;
+        throw error;
+      }
+
+      await sleep(2000);
+    }
+  }
+}
+
+consumer.on(consumer.events.CRASH, async (event) => {
+  console.error("Item-writer consumer crashed:", event.payload?.error?.message || event.payload?.error);
+});
+
+startConsumerWithRetry().catch((error) => {
+  console.error("Item-writer consumer failed to start", error);
+});

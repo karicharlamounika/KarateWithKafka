@@ -10,12 +10,14 @@ const groupId = process.env.KAFKA_GROUP_ID || "read-service-group";
 
 const kafka = new Kafka({
   clientId: "read-service",
-  brokers
+  brokers,
 });
 
 const consumer = kafka.consumer({ groupId });
 
-async function startConsumer() {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function runConsumer() {
   await consumer.connect();
   await consumer.subscribe({ topic, fromBeginning: true });
 
@@ -44,8 +46,36 @@ async function startConsumer() {
           db.run("DELETE FROM items WHERE id = ?", [event.payload.id]);
           break;
       }
-    }
+    },
   });
 }
 
-startConsumer().catch(console.error);
+async function startConsumerWithRetry(maxAttempts = 20) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await runConsumer();
+      return;
+    } catch (error) {
+      const retriable = error?.retriable ||
+        error?.type === "UNKNOWN_TOPIC_OR_PARTITION" ||
+        error?.name === "KafkaJSProtocolError";
+
+      console.error(`Kafka consumer start failed (attempt ${attempt}/${maxAttempts})`, error.message || error);
+
+      if (!retriable || attempt === maxAttempts) {
+        process.exitCode = 1;
+        throw error;
+      }
+
+      await sleep(2000);
+    }
+  }
+}
+
+consumer.on(consumer.events.CRASH, async (event) => {
+  console.error("Read-service consumer crashed:", event.payload?.error?.message || event.payload?.error);
+});
+
+startConsumerWithRetry().catch((error) => {
+  console.error("Read-service consumer failed to start", error);
+});

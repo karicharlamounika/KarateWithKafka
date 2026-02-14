@@ -19,16 +19,35 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 1
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9092'"]
       interval: 10s
       timeout: 5s
       retries: 10
 
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.3
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      for i in {1..30}; do
+        /usr/bin/kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic items-events --partitions 1 --replication-factor 1 && exit 0;
+        echo 'waiting for kafka topic provisioning...';
+        sleep 2;
+      done;
+      echo 'failed to create kafka topic';
+      exit 1
+
   auth-service:
     build: ./backend/auth-service
     ports:
       - "4000:4000"
+    environment:
+      AUTH_SECRET_KEY: auth-secret-key
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health > /dev/null"]
       interval: 10s
@@ -40,11 +59,14 @@ services:
     ports:
       - "5000:5000"
     environment:
+      AUTH_SECRET_KEY: auth-secret-key
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
     depends_on:
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health > /dev/null"]
       interval: 10s
@@ -55,6 +77,12 @@ services:
     build: ./backend/item-read-service
     ports:
       - "6000:6000"
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: items-events
     volumes:
       - read-db:/app
     healthcheck:
@@ -69,8 +97,8 @@ services:
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
     depends_on:
-      kafka:
-        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     volumes:
       - read-db:/app
 
@@ -99,6 +127,7 @@ services:
     build: ./qa-tests
     environment:
       KARATE_ENV: docker
+      BASE_URL: http://gateway:8080
     volumes:
       - read-db:/data
     depends_on:
@@ -106,6 +135,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
 
 volumes:
   read-db:
