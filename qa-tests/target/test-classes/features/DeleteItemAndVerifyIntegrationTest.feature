@@ -6,7 +6,7 @@ Feature: Delete Item flow with Kafka and DB verification
 
     # Kafka configuration
     * def kafkaBootstrap = karate.config.kafka.bootstrap
-    * call read('classpath:helpers/kafka-start.feature')
+    * call read('classpath:karatehelpers/kafka-start.feature')
       """
       { topic: 'items-events' }
       """

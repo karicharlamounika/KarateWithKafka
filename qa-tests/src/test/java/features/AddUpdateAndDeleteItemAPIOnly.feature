@@ -52,11 +52,13 @@ Feature: Item CRUD API chaining validation (API-only)
     When method POST
     Then status 201
     And match response ==
+    """
     {
     id: '#number',
     name: 'Laptop',
     quantity: 10
     }
+    """
 
     * def itemId = response.id
 
@@ -67,11 +69,13 @@ Feature: Item CRUD API chaining validation (API-only)
     When method PUT
     Then status 200
     And match response ==
+    """
     {
     id: '#(itemId)',
     name: 'Gaming Laptop',
     quantity: 15
     }
+    """
 
     # Step 4: Delete item
     Given url baseUrl + '/items/' + itemId
