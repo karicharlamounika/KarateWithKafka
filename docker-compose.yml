@@ -6,6 +6,7 @@ services:
     ports:
       - "9092:9092"
     environment:
+      # KRaft Configuration
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
@@ -15,20 +16,122 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+      # Consumer Offsets Topic Configuration (CRITICAL FOR COORDINATOR)
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: 50
+
+      # General Configuration
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 1
+
+      # Additional Stability Settings
+      KAFKA_LOG_RETENTION_MS: 604800000
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9092'"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      test: >
+        kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.3
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash"]
+    command:
+      - "-ec"
+      - |
+        echo "🔍 Verifying Kafka broker availability..."
+
+        # Verify broker is responding
+        for i in $(seq 1 30); do
+          if kafka-broker-api-versions --bootstrap-server kafka:9092 > /dev/null 2>&1; then
+            echo "✅ Kafka broker is ready"
+            break
+          fi
+          echo "⏳ Waiting for Kafka broker... ($i/30)"
+          sleep 2
+        done
+
+        # Create __consumer_offsets topic explicitly
+        echo "📝 Creating __consumer_offsets topic..."
+        kafka-topics --bootstrap-server kafka:9092 \
+          --create --if-not-exists \
+          --topic __consumer_offsets \
+          --partitions 50 \
+          --replication-factor 1 \
+          --config cleanup.policy=compact \
+          --config compression.type=producer \
+          --config segment.bytes=104857600 || echo "⚠️  __consumer_offsets already exists or auto-created"
+
+        echo "⏳ Waiting 10 seconds for coordinator initialization..."
+        sleep 10
+
+        # Verify consumer group coordinator is available
+        echo "🔍 Checking consumer group coordinator..."
+        for i in $(seq 1 20); do
+          if kafka-consumer-groups --bootstrap-server kafka:9092 --list > /dev/null 2>&1; then
+            echo "✅ Consumer group coordinator is ready"
+            break
+          fi
+          echo "⏳ Waiting for coordinator... ($i/20)"
+          sleep 2
+        done
+
+        # Create application topic
+        echo "📝 Creating items-events topic..."
+        for i in $(seq 1 30); do
+          if kafka-topics --bootstrap-server kafka:9092 \
+            --create --if-not-exists \
+            --topic items-events \
+            --partitions 1 \
+            --replication-factor 1; then
+            echo "✅ items-events topic created"
+            break
+          fi
+          echo "⏳ Waiting for topic creation... ($i/30)"
+          sleep 2
+        done
+
+        # Verify setup
+        echo "📋 Final verification:"
+        echo "Topics:"
+        kafka-topics --bootstrap-server kafka:9092 --list
+
+        echo ""
+        echo "items-events details:"
+        kafka-topics --bootstrap-server kafka:9092 --describe --topic items-events
+
+        echo ""
+        echo "Consumer groups (should not error):"
+        kafka-consumer-groups --bootstrap-server kafka:9092 --list || echo "⚠️  No consumer groups yet (expected)"
+
+        # Mark as ready
+        touch /tmp/topic-ready
+
+        echo "✅ kafka-init complete; keeping container alive for CI"
+        tail -f /dev/null
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/topic-ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   auth-service:
     build: ./backend/auth-service
     ports:
       - "4000:4000"
+    environment:
+      AUTH_SECRET_KEY: auth-secret-key
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health > /dev/null"]
       interval: 10s
@@ -40,10 +143,13 @@ services:
     ports:
       - "5000:5000"
     environment:
+      AUTH_SECRET_KEY: auth-secret-key
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
     depends_on:
       kafka:
+        condition: service_healthy
+      kafka-init:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health > /dev/null"]
@@ -55,8 +161,15 @@ services:
     build: ./backend/item-read-service
     ports:
       - "6000:6000"
+    depends_on:
+      kafka-init:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: items-events
+      SQLITE_DB_PATH: /data/items_read.db
     volumes:
-      - read-db:/app
+      - read-db:/data
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:6000/health > /dev/null"]
       interval: 10s
@@ -68,11 +181,12 @@ services:
     environment:
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
+      SQLITE_DB_PATH: /data/items_read.db
     depends_on:
-      kafka:
+      kafka-init:
         condition: service_healthy
     volumes:
-      - read-db:/app
+      - read-db:/data
 
   gateway:
     build: ./backend/gateway-service
@@ -99,12 +213,15 @@ services:
     build: ./qa-tests
     environment:
       KARATE_ENV: docker
+      BASE_URL: http://gateway:8080
     volumes:
       - read-db:/data
     depends_on:
       gateway:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      kafka-init:
         condition: service_healthy
 
 volumes:

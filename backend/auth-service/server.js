@@ -10,7 +10,7 @@ app.use(cors());
 app.use(bodyParser.json());
 const PORT = 4000;
 
-const SECRET_KEY = "your-secret-key"; // Replace with strong secret in production
+const SECRET_KEY = process.env.AUTH_SECRET_KEY || "auth-secret-key";
 
 app.get('/health', (req, res) => {
   res.sendStatus(200);
