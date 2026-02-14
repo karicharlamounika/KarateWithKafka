@@ -16,6 +16,8 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
@@ -42,6 +44,7 @@ services:
           sleep 2
         done
         /usr/bin/kafka-topics --bootstrap-server kafka:9092 --describe --topic items-events
+        /usr/bin/kafka-consumer-groups --bootstrap-server kafka:9092 --list >/dev/null 2>&1 || true
         touch /tmp/topic-ready
         echo 'kafka-init complete; keeping container alive for CI compose --abort-on-container-exit mode'
         tail -f /dev/null
