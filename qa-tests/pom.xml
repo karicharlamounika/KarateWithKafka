@@ -135,6 +135,12 @@
             <testResource>
                 <directory>src/test/java</directory>
                 <filtering>true</filtering>
+                <includes>
+                    <include>**/*.feature</include>
+                    <include>**/*.js</include>
+                    <include>**/*.json</include>
+                    <include>**/*.xml</include>
+                </includes>
             </testResource>
         </testResources>
 
