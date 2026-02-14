@@ -37,12 +37,19 @@ services:
       - "-ec"
       - |
         for i in $(seq 1 30); do
-          /usr/bin/kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic items-events --partitions 1 --replication-factor 1 && exit 0
+          /usr/bin/kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic items-events --partitions 1 --replication-factor 1 && break
           echo 'waiting for kafka topic provisioning...'
           sleep 2
         done
-        echo 'failed to create kafka topic'
-        exit 1
+        /usr/bin/kafka-topics --bootstrap-server kafka:9092 --describe --topic items-events
+        touch /tmp/topic-ready
+        echo 'kafka-init complete; keeping container alive for CI compose --abort-on-container-exit mode'
+        tail -f /dev/null
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/topic-ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   auth-service:
     build: ./backend/auth-service
@@ -68,7 +75,7 @@ services:
       kafka:
         condition: service_healthy
       kafka-init:
-        condition: service_completed_successfully
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health > /dev/null"]
       interval: 10s
@@ -81,7 +88,7 @@ services:
       - "6000:6000"
     depends_on:
       kafka-init:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
@@ -102,7 +109,7 @@ services:
       SQLITE_DB_PATH: /data/items_read.db
     depends_on:
       kafka-init:
-        condition: service_completed_successfully
+        condition: service_healthy
     volumes:
       - read-db:/data
 
@@ -140,7 +147,7 @@ services:
       kafka:
         condition: service_healthy
       kafka-init:
-        condition: service_completed_successfully
+        condition: service_healthy
 
 volumes:
   read-db:
