@@ -32,15 +32,17 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-    entrypoint: ["/bin/bash", "-c"]
-    command: >
-      for i in {1..30}; do
-        /usr/bin/kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic items-events --partitions 1 --replication-factor 1 && exit 0;
-        echo 'waiting for kafka topic provisioning...';
-        sleep 2;
-      done;
-      echo 'failed to create kafka topic';
-      exit 1
+    entrypoint: ["/bin/bash"]
+    command:
+      - "-ec"
+      - |
+        for i in $(seq 1 30); do
+          /usr/bin/kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic items-events --partitions 1 --replication-factor 1 && exit 0
+          echo 'waiting for kafka topic provisioning...'
+          sleep 2
+        done
+        echo 'failed to create kafka topic'
+        exit 1
 
   auth-service:
     build: ./backend/auth-service
