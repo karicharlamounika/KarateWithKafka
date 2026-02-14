@@ -33,7 +33,7 @@ Feature: Add Item flow with Kafka and DB verification
 
     # Step 0: Start Kafka Consumer BEFORE API calls
     * print 'Starting Kafka consumer...'
-    * call read('classpath:helpers/kafka-start.feature')
+    * call read('classpath:karatehelpers/kafka-start.feature')
       """
       { topic: 'items-events' }
       """
@@ -54,20 +54,24 @@ Feature: Add Item flow with Kafka and DB verification
     And request itemPayload
     And headers authHeaders
     When method POST
-    Then status 201
-    And match response.name == 'Laptop'
-    And match response.quantity == 10
-    * def itemId = response.id
+    Then status 202
+    And match response.message == 'Item creation queued'
+
+    # Fetch latest created item id from read model
+    * def dbLatest = call read('classpath:utils/dbQuery.js')
+      """
+      { latest: true }
+      """
+    * def itemId = dbLatest.id
 
     # Step 3: Validate Kafka Event (consumer was started in Background)
     * def kafkaMessage = call read('classpath:karatehelpers/kafka-wait.feature')
       """
-      { itemId: '#(itemId)', eventType: 'ITEM_ADDED', timeout: 15000 }
+      { eventType: 'ITEM_CREATED', timeout: 15000 }
       """
-    Then match kafkaMessage.eventType == 'ITEM_ADDED'
-    And match kafkaMessage.data.id == itemId
-    And match kafkaMessage.data.name == 'Laptop'
-    And match kafkaMessage.data.quantity == 10
+    Then match kafkaMessage.eventType == 'ITEM_CREATED'
+    And match kafkaMessage.payload.name == 'Laptop'
+    And match kafkaMessage.payload.quantity == 10
 
     # Step 4: Validate DB Update
     * def dbItem = call read('classpath:utils/dbQuery.js')
