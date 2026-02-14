@@ -2,6 +2,8 @@ function fn() {
   var env = karate.env || 'local';
   karate.log('karate.env was:', env);
 
+  var baseUrlOverride = karate.properties['baseUrl'] || java.lang.System.getenv('BASE_URL');
+
   var config = {
     baseUrl: 'http://localhost:8080',
 
@@ -30,6 +32,13 @@ function fn() {
     // DB paths remain the same (mounted volume)
     config.readDbUrl = 'jdbc:sqlite:/data/items_read.db';
   }
+
+  if (baseUrlOverride) {
+    config.baseUrl = baseUrlOverride;
+    karate.log('Using BASE_URL override:', config.baseUrl);
+  }
+
+  karate.config = config;
 
   karate.log('Final Base URL:', config.baseUrl);
   karate.log('Kafka Bootstrap:', config.kafka.bootstrap);
