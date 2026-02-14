@@ -28,12 +28,9 @@ Feature: Add Item flow with Kafka and DB verification
     # Ensure user exists before login
     * call read('classpath:karatehelpers/register-user.feature')
 
-    # Headers container
-    * def authHeaders = {}
-
     # Step 0: Start Kafka Consumer BEFORE API calls
     * print 'Starting Kafka consumer...'
-    * call read('classpath:helpers/kafka-start.feature')
+    * call read('classpath:karatehelpers/kafka-start.feature')
       """
       { topic: 'items-events' }
       """
