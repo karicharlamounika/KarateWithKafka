@@ -32,7 +32,7 @@ Feature: Update Item flow with Kafka and DB verification
       """
 
     * def authHeaders = {}
-    * call read('classpath:karatehelpers/kafka-start.feature')
+    * call read('classpath:karatehelpers/kafka-start.feature') 
       """
       { topic: 'items-events' }
       """
@@ -54,17 +54,21 @@ Feature: Update Item flow with Kafka and DB verification
     And headers authHeaders
     And request createItemPayload
     When method POST
-    Then status 201
-    * def itemId = response.id
+    Then status 202
+    And match response.message == 'Item creation queued'
+    * def dbLatest = call read('classpath:utils/dbQuery.js')
+      """
+      { latest: true }
+      """
+    * def itemId = dbLatest.id
 
     # Step 3: Update Item
     Given url baseUrl + '/items/' + itemId
     And headers authHeaders
     And request updateItemPayload
     When method PUT
-    Then status 200
-    And match response.name == 'Monitor-HD'
-    And match response.quantity == 10
+    Then status 202
+    And match response.message == 'Item update queued'
 
     # Step 4: Validate Kafka UPDATE event
     * def updateEvent = call read('classpath:karatehelpers/kafka-wait.feature')
@@ -72,9 +76,9 @@ Feature: Update Item flow with Kafka and DB verification
       { itemId: '#(itemId)', eventType: 'ITEM_UPDATED', timeout: 15000 }
       """
     Then match updateEvent.eventType == 'ITEM_UPDATED'
-    And match updateEvent.data.id == itemId
-    And match updateEvent.data.name == 'Monitor-HD'
-    And match updateEvent.data.quantity == 10
+    And match updateEvent.payload.id == itemId
+    And match updateEvent.payload.name == 'Monitor-HD'
+    And match updateEvent.payload.quantity == 10
 
     # Step 5: Validate DB state (read model)
     * def dbItem = call read('classpath:utils/dbQuery.js')
