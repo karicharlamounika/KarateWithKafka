@@ -2,14 +2,14 @@ Feature: Add Item flow with Kafka and DB verification
 
   Background:
     # API Gateway base URL
-    * def baseUrl = karate.config.baseUrl
+    * def baseUrl = config.baseUrl
 
     # User login payload
     * def loginPayload =
       """
       {
-        "email": "#(karate.config.testUser.email)",
-        "password": "#(karate.config.testUser.password)"
+        "email": "#(config.testUser.email)",
+        "password": "#(config.testUser.password)"
       }
       """
 
@@ -33,7 +33,7 @@ Feature: Add Item flow with Kafka and DB verification
 
     # Step 0: Start Kafka Consumer BEFORE API calls
     * print 'Starting Kafka consumer...'
-    * call read('classpath:helpers/kafka-start.feature')
+    * call read('classpath:karatehelpers/kafka-start.feature')
       """
       { topic: 'items-events' }
       """

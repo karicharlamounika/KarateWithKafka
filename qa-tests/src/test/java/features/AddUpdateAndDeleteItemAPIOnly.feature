@@ -1,14 +1,14 @@
 Feature: Item CRUD API chaining validation (API-only)
 
   Background:
-    * def baseUrl = karate.config.baseUrl
+    * def baseUrl = config.baseUrl
 
     # Login payload
     * def loginPayload =
       """
       {
-        "email": "#(karate.config.testUser.email)",
-        "password": "#(karate.config.testUser.password)"
+        "email": "#(config.testUser.email)",
+        "password": "#(config.testUser.password)"
       }
       """
 

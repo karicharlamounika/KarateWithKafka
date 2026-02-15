@@ -7,4 +7,4 @@ COPY src ./src
 
 RUN mvn -q -DskipTests package
 
-CMD ["mvn", "test", "-Pdocker"]
+CMD ["mvn", "clean", "test", "verify", "-Pdocker"]
