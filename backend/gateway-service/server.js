@@ -47,7 +47,7 @@ app.post("/items*", itemWriteProxy);
 app.put("/items*", itemWriteProxy);
 app.delete("/items*", itemWriteProxy);
 
-app.listen(8080, "0.0.0.0", () => {
+app.listen(8080, () => {
   console.log("========================================");
   console.log("API Gateway running on port 8080");
   console.log(`  /auth -> ${AUTH_SERVICE_URL}`);
