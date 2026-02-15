@@ -31,10 +31,9 @@ Feature: Add Item flow with Kafka and DB verification
 
     # Step 0: Start Kafka Consumer BEFORE API calls
     * print 'Starting Kafka consumer...'
-    * call read('classpath:karatehelpers/kafka-start.feature')
-      """
-      { topic: 'items-events' }
-      """
+    * def topic = { topic: 'items-events' }
+    * call read('classpath:karatehelpers/kafka-start.feature') topic
+     
     * karate.log('Kafka consumer initialized')
 
   Scenario: User adds an item and system updates via Kafka
