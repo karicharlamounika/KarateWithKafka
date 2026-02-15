@@ -5,17 +5,23 @@ function fn(params) {
   Class.forName('org.sqlite.JDBC');
 
   var itemId = params.id;
+  var latest = params.latest;
 
   var dbUrl =
     readDbUrl ||
     'jdbc:sqlite:/data/read.db';
 
   var connection = DriverManager.getConnection(dbUrl);
-  var preparedStatement = connection.prepareStatement(
-    'SELECT id, name, quantity FROM items WHERE id = ?'
-  );
 
-  preparedStatement.setInt(1, itemId);
+  var sql = latest
+    ? 'SELECT id, name, quantity FROM items ORDER BY id DESC LIMIT 1'
+    : 'SELECT id, name, quantity FROM items WHERE id = ?';
+
+  var preparedStatement = connection.prepareStatement(sql);
+  if (!latest) {
+    preparedStatement.setInt(1, itemId);
+  }
+
   var rs = preparedStatement.executeQuery();
 
   var result = null;
