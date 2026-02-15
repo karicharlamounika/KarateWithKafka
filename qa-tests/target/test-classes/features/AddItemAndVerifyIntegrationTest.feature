@@ -26,6 +26,7 @@ Feature: Add Item flow with Kafka and DB verification
     * def authHeaders = {}
 
     # Ensure user exists before login
+    * print 'Ensuring test user exists...'
     * call read('classpath:karatehelpers/register-user.feature')
 
     # Step 0: Start Kafka Consumer BEFORE API calls
