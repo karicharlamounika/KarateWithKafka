@@ -15,6 +15,7 @@ RUN echo "===========================================" && \
     echo "" && \
     echo "karatehelpers directory contents:" && \
     ls -la src/test/java/karatehelpers/ 2>/dev/null || echo "karatehelpers directory NOT FOUND!" && \
+    ls -la src/target/test-classes/karatehelpers/ 2>/dev/null || echo "karatehelpers directory NOT FOUND!" && \
     echo "==========================================="
 
-CMD ["mvn", "clean","test", "-Pdocker"]
+CMD ["mvn", "test", "-Pdocker"]
