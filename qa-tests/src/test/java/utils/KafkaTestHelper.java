@@ -2,6 +2,9 @@ package utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
@@ -28,6 +31,20 @@ public class KafkaTestHelper {
     private static KafkaConsumer<String, String> consumer;
     private static final AtomicBoolean isRunning = new AtomicBoolean(false);
 
+    private static void ensureTopicExists(String bootstrapServers, String topic) {
+        Properties adminProps = new Properties();
+        adminProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        try (AdminClient admin = AdminClient.create(adminProps)) {
+            Set<String> names = admin.listTopics().names().get(10, TimeUnit.SECONDS);
+            if (!names.contains(topic)) {
+                admin.createTopics(Collections.singletonList(new NewTopic(topic, 1, (short) 1))).all().get(10, TimeUnit.SECONDS);
+                logger.info("Created topic for tests: {}", topic);
+            }
+        } catch (Exception e) {
+            logger.warn("Topic check/create failed (continuing): {}", e.getMessage());
+        }
+    }
+
     /** Start Kafka consumer */
     public static synchronized Map<String, Object> startConsumer(String bootstrapServers, String topic) {
         if (isRunning.get()) {
@@ -42,6 +59,8 @@ public class KafkaTestHelper {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+
+        ensureTopicExists(bootstrapServers, topic);
 
         consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
@@ -109,15 +128,21 @@ public class KafkaTestHelper {
 
     /** Wait for event by itemId */
     public static Map<String, Object> waitForEvent(int itemId, int timeoutMs) {
-        return waitForMessage(msg -> msg.has("data") && msg.get("data").has("id") &&
-                msg.get("data").get("id").asInt() == itemId, timeoutMs);
+        return waitForMessage(msg -> msg.has("payload") && msg.get("payload").has("id") &&
+                msg.get("payload").get("id").asInt() == itemId, timeoutMs);
     }
 
     /** Wait for event by eventType and itemId */
     public static Map<String, Object> waitForEventType(String eventType, int itemId, int timeoutMs) {
-        return waitForMessage(msg -> msg.has("eventType") && msg.has("data") &&
+        return waitForMessage(msg -> msg.has("eventType") && msg.has("payload") &&
                 msg.get("eventType").asText().equals(eventType) &&
-                msg.get("data").has("id") && msg.get("data").get("id").asInt() == itemId, timeoutMs);
+                msg.get("payload").has("id") && msg.get("payload").get("id").asInt() == itemId, timeoutMs);
+    }
+
+    /** Wait for event by eventType only */
+    public static Map<String, Object> waitForEventType(String eventType, int timeoutMs) {
+        return waitForMessage(msg -> msg.has("eventType") &&
+                msg.get("eventType").asText().equals(eventType), timeoutMs);
     }
 
     /** Clear messages */
