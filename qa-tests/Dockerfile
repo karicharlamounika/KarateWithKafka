@@ -14,7 +14,7 @@ RUN echo "===========================================" && \
     find src -type f -name "*.feature" && \
     echo "" && \
     echo "karatehelpers directory contents:" && \
-    ls -la src/test/resources/karatehelpers/ 2>/dev/null || echo "karatehelpers directory NOT FOUND!" && \
+    ls -la src/test/java/karatehelpers/ 2>/dev/null || echo "karatehelpers directory NOT FOUND!" && \
     echo "==========================================="
 
 CMD ["mvn", "clean","test", "-Pdocker"]
