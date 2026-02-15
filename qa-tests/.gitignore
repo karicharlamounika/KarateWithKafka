@@ -26,3 +26,4 @@ dist-ssr
 catalogmanager.db
 backend.log
 api_test_results
+target/

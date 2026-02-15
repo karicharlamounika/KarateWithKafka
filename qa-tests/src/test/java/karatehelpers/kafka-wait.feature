@@ -16,4 +16,4 @@ Feature: Wait for Kafka event
           : KafkaTestHelper.waitForEventType(eventType, timeout))
       : KafkaTestHelper.waitForEvent(itemId, timeout)
     """
-    * return message
+

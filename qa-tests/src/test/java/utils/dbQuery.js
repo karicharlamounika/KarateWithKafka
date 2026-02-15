@@ -7,15 +7,13 @@ function fn(params) {
   var itemId = params.id;
   var latest = params.latest;
 
-  var dbUrl =
-    karate.config.readDbUrl ||
-    'jdbc:sqlite:/data/read.db';
+  var dbUrl = readDbUrl ||'jdbc:sqlite:/data/items_read.db';
 
   var connection = DriverManager.getConnection(dbUrl);
 
   var sql = latest
     ? 'SELECT id, name, quantity FROM items ORDER BY id DESC LIMIT 1'
-    : 'SELECT id, name, quantity FROM items WHERE id = ?';
+    : 'SELECT id, name, quantity FROM items WHERE name = ?';
 
   var preparedStatement = connection.prepareStatement(sql);
   if (!latest) {

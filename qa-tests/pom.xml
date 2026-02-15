@@ -20,7 +20,6 @@
         <maven.compiler.target>21</maven.compiler.target>
         <karate.version>1.4.1</karate.version>
         <kafka.version>3.6.1</kafka.version>
-        <testcontainers.version>1.19.3</testcontainers.version>
         <junit.version>5.9.3</junit.version>
         <slf4j.version>2.0.9</slf4j.version>
     </properties>
@@ -55,28 +54,7 @@
             <version>3.1.2</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- Testcontainers - For Real Kafka in Docker -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>kafka</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
-        </dependency>
+        
 
         <!-- MySQL JDBC Driver (alternative) -->
         <dependency>
@@ -85,13 +63,11 @@
             <version>8.2.0</version>
         </dependency>
 
-        <!-- JUnit 5 -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
+  <groupId>org.xerial</groupId>
+  <artifactId>sqlite-jdbc</artifactId>
+  <version>3.45.1.0</version>
+</dependency>
 
         <!-- JSON Processing -->
         <dependency>

@@ -5,25 +5,10 @@ Feature: Add Item flow with Kafka and DB verification
     * def baseUrl = baseUrl
 
     # User login payload
-    * def loginPayload =
-      """
-      {
-        "email": "#(testUser.email)",
-        "password": "#(testUser.password)"
-      }
-      """
+    * def loginPayload = { "email": "#(testUser.email)", "password": "#(testUser.password)"}
 
     # Item payload
-    * def itemPayload =
-      """
-      {
-        "name": "Laptop",
-        "quantity": 10
-      }
-      """
-
-    # Headers container
-    * def authHeaders = {}
+    * def itemPayload = { "name": "CPU", "quantity": 10}
 
     # Ensure user exists before login
     * print 'Ensuring test user exists...'
@@ -44,27 +29,25 @@ Feature: Add Item flow with Kafka and DB verification
     Then status 200
     # Save token in headers
     * def token = response.token
-    * set authHeaders['Authorization'] = 'Bearer ' + token
+    * def authHeader = 'Bearer ' + token
 
     # Step 2: Add Item
     Given url baseUrl + '/items'
     And request itemPayload
-    And headers authHeaders
+    And header Authorization = authHeader
     When method POST
     Then status 202
     And match response.message == 'Item creation queued'
 
-    # Fetch latest created item id from read model
-    * def dbLatest = call read('classpath:utils/dbQuery.js') { latest: true }
-    * def itemId = dbLatest.id
-
     # Step 3: Validate Kafka Event (consumer was started in Background)
     * def kafkaMessage = call read('classpath:karatehelpers/kafka-wait.feature') { eventType: 'ITEM_CREATED', timeout: 15000 }
-    Then match kafkaMessage.eventType == 'ITEM_CREATED'
-    And match kafkaMessage.payload.name == 'Laptop'
-    And match kafkaMessage.payload.quantity == 10
+    * print 'Received Kafka message:',  kafkaMessage
+    Then match kafkaMessage.message.eventType == 'ITEM_CREATED'
+    * print 'Kafka message payload:' , kafkaMessage.message.payload.name , ', quantity:' + kafkaMessage.message.payload.quantity
+    And match kafkaMessage.message.payload.name == 'Laptop'
+    And match kafkaMessage.message.payload.quantity == 10
 
     # Step 4: Validate DB Update
-    * def dbItem = call read('classpath:utils/dbQuery.js') { id: '#(itemId)' }
-    Then match dbItem.name == 'Laptop'
+    * def dbItem = call read('classpath:utils/dbQuery.js') { name: '#(itemPayload.name)' }
+    Then match dbItem.name == 'CPU'
     And match dbItem.quantity == 10

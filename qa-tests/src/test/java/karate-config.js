@@ -1,4 +1,6 @@
 function fn() {
+    karate.configure('logPrettyRequest', true);
+    karate.configure('logPrettyResponse', true);
   var env = karate.env || 'local';
   karate.log('karate.env was:', env);
 

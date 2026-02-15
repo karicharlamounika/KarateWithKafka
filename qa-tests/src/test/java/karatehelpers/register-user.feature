@@ -18,4 +18,5 @@ Feature: Register test user if needed
     And request registerPayload
     When method POST
     * def statusCode = responseStatus
-    * match statusCode == 201 || statusCode == 409
+    * print 'User registration response status:' + statusCode
+    * assert statusCode == 201 || statusCode == 409
