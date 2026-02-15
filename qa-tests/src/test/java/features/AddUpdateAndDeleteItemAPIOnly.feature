@@ -43,11 +43,11 @@ Feature: Item CRUD API chaining validation (API-only)
     When method POST
     Then status 200
     * def token = response.token
-    * set authHeaders.Authorization = 'Bearer ' + token
+    * def authHeader = 'Bearer ' + token
 
     # Step 2: Add item
     Given url baseUrl + '/items'
-    And headers authHeaders
+    And header authHeader
     And request addItemPayload
     When method POST
     Then status 202
@@ -60,7 +60,7 @@ Feature: Item CRUD API chaining validation (API-only)
 
     # Step 3: Update item
     Given url baseUrl + '/items/' + itemId
-    And headers authHeaders
+    And header authHeader
     And request updateItemPayload
     When method PUT
     Then status 202
@@ -68,7 +68,7 @@ Feature: Item CRUD API chaining validation (API-only)
 
     # Step 4: Delete item
     Given url baseUrl + '/items/' + itemId
-    And headers authHeaders
+    And header authHeader
     When method DELETE
     Then status 202
     And match response.message == 'Item deletion queued'
