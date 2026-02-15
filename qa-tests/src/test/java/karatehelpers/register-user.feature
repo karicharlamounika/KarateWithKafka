@@ -2,16 +2,15 @@
 Feature: Register test user if needed
 
   Background:
-    * def baseUrl = karate.config.baseUrl
 
   Scenario: Register the test user
     * def registerPayload =
     """
     {
-      "firstName": "#(karate.config.testUser.firstName)",
-      "lastName": "#(karate.config.testUser.lastName)",
-      "email": "#(karate.config.testUser.email)",
-      "password": "#(karate.config.testUser.password)"
+      "firstName": "#(testUser.firstName)",
+      "lastName": "#(testUser.lastName)",
+      "email": "#(testUser.email)",
+      "password": "#(testUser.password)"
     }
     """
     Given url baseUrl + '/auth/register'

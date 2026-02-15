@@ -7,7 +7,7 @@ function fn(params) {
   var itemId = params.id;
 
   var dbUrl =
-    karate.config.readDbUrl ||
+    readDbUrl ||
     'jdbc:sqlite:/data/read.db';
 
   var connection = DriverManager.getConnection(dbUrl);

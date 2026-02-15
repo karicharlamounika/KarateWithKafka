@@ -2,14 +2,13 @@ Feature: Update Item flow with Kafka and DB verification
 
   Background:
     # Base URL via API Gateway
-    * def baseUrl = karate.config.baseUrl
 
     # Login payload
     * def loginPayload =
       """
       {
-        "email": "#(karate.config.testUser.email)",
-        "password": "#(karate.config.testUser.password)"
+        "email": "#(testUser.email)",
+        "password": "#(testUser.password)"
       }
       """
 
@@ -32,7 +31,7 @@ Feature: Update Item flow with Kafka and DB verification
       """
 
     * def authHeaders = {}
-    * call read('classpath:helpers/kafka-start.feature') 
+    * call read('classpath:karatehelpers/kafka-start.feature') 
       """
       { topic: 'items-events' }
       """
