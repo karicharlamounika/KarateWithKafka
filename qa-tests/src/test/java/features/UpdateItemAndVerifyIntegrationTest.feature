@@ -2,14 +2,14 @@ Feature: Update Item flow with Kafka and DB verification
 
   Background:
     # Base URL via API Gateway
-    * def baseUrl = karate.config.baseUrl
+    * def baseUrl = baseUrl
 
     # Login payload
     * def loginPayload =
       """
       {
-        "email": "#(karate.config.testUser.email)",
-        "password": "#(karate.config.testUser.password)"
+        "email": "#(testUser.email)",
+        "password": "#(testUser.password)"
       }
       """
 

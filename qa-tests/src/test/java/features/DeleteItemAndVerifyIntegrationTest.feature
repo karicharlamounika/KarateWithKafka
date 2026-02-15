@@ -2,10 +2,9 @@ Feature: Delete Item flow with Kafka and DB verification
 
   Background:
     # API Gateway base URL
-    * def baseUrl = karate.config.baseUrl
+    * def baseUrl = baseUrl
 
     # Kafka configuration
-    * def kafkaBootstrap = karate.config.kafka.bootstrap
     * call read('classpath:karatehelpers/kafka-start.feature')
       """
       { topic: 'items-events' }
@@ -15,8 +14,8 @@ Feature: Delete Item flow with Kafka and DB verification
     * def loginPayload =
       """
       {
-        "email": "#(karate.config.testUser.email)",
-        "password": "#(karate.config.testUser.password)"
+        "email": "#(testUser.email)",
+        "password": "#(testUser.password)"
       }
       """
 

@@ -1,14 +1,14 @@
 Feature: Item CRUD API chaining validation (API-only)
 
   Background:
-    * def baseUrl = karate.config.baseUrl
+    * def baseUrl = baseUrl
 
     # Login payload
     * def loginPayload =
       """
       {
-        "email": "#(karate.config.testUser.email)",
-        "password": "#(karate.config.testUser.password)"
+        "email": "#(testUser.email)",
+        "password": "#(testUser.password)"
       }
       """
 
@@ -50,35 +50,25 @@ Feature: Item CRUD API chaining validation (API-only)
     And headers authHeaders
     And request addItemPayload
     When method POST
-    Then status 201
-    And match response ==
-    """
-    {
-    id: '#number',
-    name: 'Laptop',
-    quantity: 10
-    }
-    """
-
-    * def itemId = response.id
+    Then status 202
+    And match response.message == 'Item creation queued'
+    * def dbLatest = call read('classpath:utils/dbQuery.js')
+      """
+      { latest: true }
+      """
+    * def itemId = dbLatest.id
 
     # Step 3: Update item
     Given url baseUrl + '/items/' + itemId
     And headers authHeaders
     And request updateItemPayload
     When method PUT
-    Then status 200
-    And match response ==
-    """
-    {
-    id: '#(itemId)',
-    name: 'Gaming Laptop',
-    quantity: 15
-    }
-    """
+    Then status 202
+    And match response.message == 'Item update queued'
 
     # Step 4: Delete item
     Given url baseUrl + '/items/' + itemId
     And headers authHeaders
     When method DELETE
-    Then status 204
+    Then status 202
+    And match response.message == 'Item deletion queued'

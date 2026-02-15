@@ -2,10 +2,9 @@ Feature: Delete Item flow with Kafka and DB verification
 
   Background:
     # API Gateway base URL
-    * def baseUrl = karate.config.baseUrl
+    * def baseUrl = baseUrl
 
     # Kafka configuration
-    * def kafkaBootstrap = karate.config.kafka.bootstrap
     * call read('classpath:karatehelpers/kafka-start.feature')
       """
       { topic: 'items-events' }
@@ -15,8 +14,8 @@ Feature: Delete Item flow with Kafka and DB verification
     * def loginPayload =
       """
       {
-        "email": "#(karate.config.testUser.email)",
-        "password": "#(karate.config.testUser.password)"
+        "email": "#(testUser.email)",
+        "password": "#(testUser.password)"
       }
       """
 
@@ -49,14 +48,20 @@ Feature: Delete Item flow with Kafka and DB verification
     And headers authHeaders
     And request itemPayload
     When method POST
-    Then status 201
-    * def itemId = response.id
+    Then status 202
+    And match response.message == 'Item creation queued'
+    * def dbLatest = call read('classpath:utils/dbQuery.js')
+      """
+      { latest: true }
+      """
+    * def itemId = dbLatest.id
 
     # Step 3: Delete Item
     Given url baseUrl + '/items/' + itemId
     And headers authHeaders
     When method DELETE
-    Then status 204
+    Then status 202
+    And match response.message == 'Item deletion queued'
 
     # Step 4: Validate Kafka DELETE event
     * def deleteEvent = call read('classpath:karatehelpers/kafka-wait.feature')
@@ -64,7 +69,7 @@ Feature: Delete Item flow with Kafka and DB verification
       { itemId: '#(itemId)', eventType: 'ITEM_DELETED', timeout: 15000 }
       """
     Then match deleteEvent.eventType == 'ITEM_DELETED'
-    And match deleteEvent.data.id == itemId
+    And match deleteEvent.payload.id == itemId
 
     # Step 5: Validate DB state (item should NOT exist)
     * def dbItem = call read('classpath:utils/dbQuery.js')

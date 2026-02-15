@@ -28,6 +28,13 @@ function fn() {
 
     config.baseUrl = 'http://gateway:8080';
     config.kafka.bootstrap = 'kafka:9092';
+    config.kafka.topic = 'items-events';
+    config.testUser = {
+      firstName: 'Test',
+      lastName: 'User',
+      email: 'testuser@example.com',
+      password: 'Password123'
+    };
 
     // DB paths remain the same (mounted volume)
     config.readDbUrl = 'jdbc:sqlite:/data/items_read.db';
