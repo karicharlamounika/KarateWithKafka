@@ -33,7 +33,7 @@ Feature: Add Item flow with Kafka and DB verification
     * print 'Starting Kafka consumer...'
     * def topic = { topic: 'items-events' }
     * call read('classpath:karatehelpers/kafka-start.feature') topic
-     
+
     * karate.log('Kafka consumer initialized')
 
   Scenario: User adds an item and system updates via Kafka
@@ -55,25 +55,16 @@ Feature: Add Item flow with Kafka and DB verification
     And match response.message == 'Item creation queued'
 
     # Fetch latest created item id from read model
-    * def dbLatest = call read('classpath:utils/dbQuery.js')
-      """
-      { latest: true }
-      """
+    * def dbLatest = call read('classpath:utils/dbQuery.js') { latest: true }
     * def itemId = dbLatest.id
 
     # Step 3: Validate Kafka Event (consumer was started in Background)
-    * def kafkaMessage = call read('classpath:karatehelpers/kafka-wait.feature')
-      """
-      { eventType: 'ITEM_CREATED', timeout: 15000 }
-      """
+    * def kafkaMessage = call read('classpath:karatehelpers/kafka-wait.feature') { eventType: 'ITEM_CREATED', timeout: 15000 }
     Then match kafkaMessage.eventType == 'ITEM_CREATED'
     And match kafkaMessage.payload.name == 'Laptop'
     And match kafkaMessage.payload.quantity == 10
 
     # Step 4: Validate DB Update
-    * def dbItem = call read('classpath:utils/dbQuery.js')
-      """
-      { id: '#(itemId)' }
-      """
+    * def dbItem = call read('classpath:utils/dbQuery.js') { id: '#(itemId)' }
     Then match dbItem.name == 'Laptop'
     And match dbItem.quantity == 10
