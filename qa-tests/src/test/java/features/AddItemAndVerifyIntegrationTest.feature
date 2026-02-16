@@ -8,7 +8,7 @@ Feature: Add Item flow with Kafka and DB verification
     * def loginPayload = { "email": "#(testUser.email)", "password": "#(testUser.password)"}
 
     # Item payload
-    * def itemPayload = { "name": "CPU", "quantity": 10}
+    * def itemPayload = { "name": "Laptop", "quantity": 10}
 
     # Ensure user exists before login
     * print 'Ensuring test user exists...'
