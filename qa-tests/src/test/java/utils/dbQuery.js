@@ -6,6 +6,7 @@ function fn(params) {
 
   var itemId = params.id;
   var latest = params.latest;
+  var name = params.name;
 
   var dbUrl = readDbUrl ||'jdbc:sqlite:/data/items_read.db';
 
@@ -13,12 +14,18 @@ function fn(params) {
 
   var sql = latest
     ? 'SELECT id, name, quantity FROM items ORDER BY id DESC LIMIT 1'
-    : 'SELECT id, name, quantity FROM items WHERE name = ?';
+    : name
+    ? 'SELECT id, name, quantity FROM items WHERE name = ?'
+    : 'SELECT id, name, quantity FROM items WHERE id = ?';
 
   var preparedStatement = connection.prepareStatement(sql);
   if (!latest) {
+    if(!name) {
     preparedStatement.setInt(1, itemId);
-  }
+  } else {   
+    preparedStatement.setString(1, name);
+  } 
+}
 
   var rs = preparedStatement.executeQuery();
 
