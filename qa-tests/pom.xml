@@ -47,15 +47,6 @@
             <version>${kafka.version}</version>
         </dependency>
 
-        <!-- Spring Kafka Test - Embedded Kafka Support -->
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka-test</artifactId>
-            <version>3.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        
-
         <!-- MySQL JDBC Driver (alternative) -->
         <dependency>
             <groupId>com.mysql</groupId>

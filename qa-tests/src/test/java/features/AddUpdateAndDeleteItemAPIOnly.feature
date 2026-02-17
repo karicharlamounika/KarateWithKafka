@@ -30,8 +30,6 @@ Feature: Item CRUD API chaining validation (API-only)
       }
       """
 
-    * def authHeaders = {}
-
     # Ensure user exists before login
     * call read('classpath:karatehelpers/register-user.feature')
 
@@ -47,20 +45,17 @@ Feature: Item CRUD API chaining validation (API-only)
 
     # Step 2: Add item
     Given url baseUrl + '/items'
-    And header authHeader
+    And header Authorization = authHeader
     And request addItemPayload
     When method POST
     Then status 202
     And match response.message == 'Item creation queued'
-    * def dbLatest = call read('classpath:utils/dbQuery.js')
-      """
-      { latest: true }
-      """
+    * def dbLatest = call read('classpath:utils/dbQuery.js') { latest: true }
     * def itemId = dbLatest.id
 
     # Step 3: Update item
     Given url baseUrl + '/items/' + itemId
-    And header authHeader
+    And header Authorization = authHeader
     And request updateItemPayload
     When method PUT
     Then status 202
@@ -68,7 +63,7 @@ Feature: Item CRUD API chaining validation (API-only)
 
     # Step 4: Delete item
     Given url baseUrl + '/items/' + itemId
-    And header authHeader
+    And header Authorization = authHeader
     When method DELETE
     Then status 202
     And match response.message == 'Item deletion queued'

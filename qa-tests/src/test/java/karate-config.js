@@ -14,7 +14,7 @@ function fn() {
       topic: 'items-events'
     },
 
-    readDbUrl: 'jdbc:sqlite:/data/items_read.db',
+    readDbUrl: 'jdbc:sqlite:../backend/item-read-service/items_read.db',
 
     testUser: {
       firstName: 'Test',

@@ -43,12 +43,10 @@ Feature: Add Item flow with Kafka and DB verification
     * def kafkaMessage = call read('classpath:karatehelpers/kafka-wait.feature') { eventType: 'ITEM_CREATED', timeout: 15000 }
     * print 'Received Kafka message:',  kafkaMessage
     Then match kafkaMessage.message.eventType == 'ITEM_CREATED'
-    * print 'Kafka message payload:' , kafkaMessage.message.payload.name , ', quantity:' + kafkaMessage.message.payload.quantity
     And match kafkaMessage.message.payload.name == 'Laptop'
     And match kafkaMessage.message.payload.quantity == 10
 
     # Step 4: Validate DB Update
-    * def dbItem = call read('classpath:utils/dbQuery.js') { name: '#(itemPayload.name)' }
-    * print 'DB Item:', dbItem
+    * def dbItem = call read('classpath:utils/dbQuery.js') { name: 'Laptop' }
     Then match dbItem.name == 'Laptop'
     And match dbItem.quantity == 10

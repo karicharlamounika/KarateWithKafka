@@ -8,7 +8,9 @@ function fn(params) {
   var latest = params.latest;
   var name = params.name;
 
-  var dbUrl = readDbUrl ||'jdbc:sqlite:/data/items_read.db';
+  var dbUrl = readDbUrl ||'jdbc:sqlite:../backend/items-read-service/item_read.db';
+
+  
 
   var connection = DriverManager.getConnection(dbUrl);
 
@@ -24,8 +26,6 @@ function fn(params) {
     preparedStatement.setInt(1, itemId);
   } else {   
     preparedStatement.setString(1, name);
-    var stm = preparedStatement.toString();
-    console.log('Querying for item with name:', stm);
   } 
 }
 
@@ -36,7 +36,7 @@ function fn(params) {
     result = {
       id: rs.getInt('id'),
       name: rs.getString('name'),
-      quantity: rs.getInt('quantity')
+      quantity: rs.getInt('quantity') 
     };
   }
 

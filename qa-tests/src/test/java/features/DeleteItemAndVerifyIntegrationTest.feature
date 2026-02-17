@@ -5,10 +5,7 @@ Feature: Delete Item flow with Kafka and DB verification
     * def baseUrl = baseUrl
 
     # Kafka configuration
-    * call read('classpath:karatehelpers/kafka-start.feature')
-      """
-      { topic: 'items-events' }
-      """
+    * call read('classpath:karatehelpers/kafka-start.feature') { topic: 'items-events' }
 
     # Login payload
     * def loginPayload =
