@@ -24,6 +24,8 @@ function fn(params) {
     preparedStatement.setInt(1, itemId);
   } else {   
     preparedStatement.setString(1, name);
+    var stm = preparedStatement.toString();
+    console.log('Querying for item with name:', stm);
   } 
 }
 
