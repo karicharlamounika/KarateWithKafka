@@ -4,8 +4,8 @@
   "description": "Read model service for items using CQRS pattern",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "consumer": "node consumer.js",
+    "start-item-read-service": "node server.js",
+    "consumer-item-read-service": "node kafkaConsumer.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 # Monorepo Project: Karate with Kafka
 
-This monorepo contains two main components: a backend service built with Node.js and a QA testing suite using Maven and Karate for integration testing.
+This monorepo contains two main components: a backend service built with Node.js/kafka and a QA testing suite using Maven and Karate for integration testing.
 
 ## Project Structure
 
