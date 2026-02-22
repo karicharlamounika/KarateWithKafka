@@ -131,8 +131,8 @@ Start each service in separate terminals:
 cd backend/auth-service && npm run start-auth-service
 cd backend/gateway-service && npm run start-gateway-service
 cd backend/item-service && npm run start-item-service
-cd backend/item-read-service && npm run start-item-read-service
-cd backend/item-writer-service && npm run start-item-writer-service-consumer
+cd backend/item-read-service && npm run start-item-read-service && npm run consumer-item-read-service
+cd backend/item-writer-service && npm run start-item-writer-service-consumer  
 ```
 
 ### QA tests
