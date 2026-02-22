@@ -3,10 +3,12 @@ name: QA Tests (Docker Compose)
 on:
   push:
     branches:
+      - master
       - qa-tests
       - qa-tests-runner-docker
   pull_request:
     branches:
+      - master
       - qa-tests
 
 jobs:
