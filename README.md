@@ -1,6 +1,6 @@
-# KarateWithKafka
+# KarateWithKafka - Monorepo approach
 
-End-to-end demo project for **event-driven microservices** with **Kafka + CQRS**, validated by **Karate integration tests**.
+End-to-end mono repo demo project for **event-driven microservices** with **Kafka + CQRS**, validated by **Karate integration tests**.
 
 This repository includes:
 - A Node.js backend split into focused services.
