@@ -9,7 +9,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const PORT = 5000;
-const AUTH_SECRET_KEY = "auth-secret-key"; // must match auth-service
+const AUTH_SECRET_KEY = process.env.AUTH_SECRET_KEY || "auth-secret-key";
 
 // Connect Kafka Producer
 connectProducer().catch(console.error);
@@ -57,7 +57,7 @@ app.put("/items/:id", authenticateToken, async (req, res) => {
   const { name, quantity } = req.body;
 
   await publishEvent("ITEM_UPDATED", {
-    id,
+    id: parseInt(id),
     name,
     quantity,
     userId: req.user.id,
@@ -71,7 +71,7 @@ app.delete("/items/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   await publishEvent("ITEM_DELETED", {
-    id,
+    id: parseInt(id),
     userId: req.user.id,
   });
 

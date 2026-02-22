@@ -1,94 +1,83 @@
-# Inventory Catalog Manager
+# Monorepo Project: Karate with Kafka
 
-Welcome to the Inventory Catalog Manager project! This application allows users to register, log in, and manage inventory items (add, update, delete) through a modern web interface and robust backend API.
+This monorepo contains two main components: a backend service built with Node.js/kafka and a QA testing suite using Maven and Karate for integration testing.
 
+## Project Structure
 
-## Overview
-
-The Inventory Catalog Manager consists of:
-- **Frontend:** A user-friendly interface for managing inventory.
-- **Backend:** A RESTful API for authentication and inventory operations.
-- **Automated Tests:** End-to-end (E2E) and API tests to ensure application quality.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v20 or higher recommended)
-- [npm](https://www.npmjs.com/)
-- [Git](https://git-scm.com/) (optional, for cloning the repository)
-
----
-
-### Setup Instructions
-
-Clone the repository and navigate to the project directory:
-
-```sh
-git clone https://github.com/karicharlamounika/Inventory_Catalog_Manager.git
-cd Inventory_Catalog_Manager
+```
+├── README.md
+├── .github/
+├── appmod/
+│   └── appcat/
+├── backend/
+│   ├── .gitignore
+│   ├── package.json
+│   ├── api_test_results/
+│   ├── auth-service/
+│   ├── gateway-service/
+│   ├── item-read-service/
+│   ├── item-service/
+│   └── item-writer-service/
+├── qa-tests/
+│   ├── .gitignore
+│   ├── karate-config.js
+│   ├── pom.xml
+│   ├── rewrite.yml
+│   ├── run-upgrade.bat
+│   └── src/
+└── target/
 ```
 
----
+## Backend
 
-## Running the Application
+The backend is built using Node.js and npm. It consists of multiple microservices, including:
 
-**The backend and frontend must be running before executing any tests.**
+- **Auth Service**: Handles user authentication.
+- **Gateway Service**: Acts as an API gateway for routing requests.
+- **Item Services**: Manages item-related operations.
 
-### Backend Setup
+### Getting Started
 
-- **Linux/macOS (bash):**
-  ```sh
-  ./setup_backend.sh
-  ```
-- **Windows (CMD/PowerShell):**
-  ```bat
-  setup_backend.bat
-  ```
-  
-### Frontend Setup
+1. Navigate to the `backend` directory.
+2. Install dependencies:
 
-- **Linux/macOS (bash):**
-  ```sh
-  ./setup_frontend.sh
-  ```
-- **Windows (CMD/PowerShell):**
-  ```bat
-  setup_frontend.bat
-  ```
+   ```bash
+   npm install
+   ```
 
----
+3. Start the server:
 
-## Running Tests
+   ```bash
+   npm start
+   ```
 
-After both frontend and backend are running, you can execute the automated tests.
+## QA Tests
 
-- **Linux/macOS (bash):**
-  ```sh
-  ./run_tests.sh
-  ```
-- **Windows (CMD/PowerShell):**
-  ```bat
-  run_tests.bat
-  ```
+The QA tests are implemented using Maven and Karate, focusing on integration tests for the microservices.
 
-This will run both API and E2E tests in sequence on local setup.
+### Getting Started with QA Tests
 
-### Running Tests via GitHub Actions (CI)
+1. Navigate to the `qa-tests` directory.
+2. Build the project:
 
-Automated tests are also executed as part of the project's Continuous Integration (CI) pipeline using GitHub Actions.  
-Worflow is configure to be trigerred manaully, once triggered all tests would run after building the backend and frontend automatically.  
-You can view the workflow configuration in the .github/workflows directory and check test results directly on the GitHub repository's Actions tab.
+   ```bash
+   mvn clean install
+   ```
 
-Note: This workflow can be configured to trigger on both pull and pust of code to repository.
+3. Run the tests:
 
----
+   ```bash
+   mvn test
+   ```
 
+### Test Features
 
-## Test Plan
+- **Add Item and Verify Integration Test**: Tests the flow of adding an item and verifying it through Kafka and the database.
 
-For a detailed description of the testing strategy, scenarios, and tools used, please refer to the [Test Plan](Test_plan.md).
+## Contributing
 
----
+Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
