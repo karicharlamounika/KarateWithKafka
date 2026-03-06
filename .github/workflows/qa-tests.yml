@@ -67,7 +67,7 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: Karate Test Results
-          path: test-results/*.xml
+          path: test-results/*.html
           reporter: java-junit
           fail-on-error: false    
 

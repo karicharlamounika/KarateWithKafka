@@ -10,18 +10,9 @@ class KarateTestRunner {
     // ✅ API tests — parallel
     @Test
     void testApiParallel() {
-        Results results = Runner.path("classpath:features")
-            .tags("~@integration")
-            .parallel(4);
+        Results results = Runner.path("classpath:features").parallel(4);
         assertEquals(0, results.getFailCount(), results.getErrorMessages());
     }
 
-    // ✅ Integration tests — sequential until Kafka fixed
-    @Test
-    void testIntegration() {
-        Results results = Runner.path("classpath:features")
-            .tags("@integration")
-            .parallel(1);
-        assertEquals(0, results.getFailCount(), results.getErrorMessages());
-    }
+
 }
