@@ -1,6 +1,7 @@
 name: QA Tests (Docker Compose)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -9,7 +10,7 @@ on:
   pull_request:
     branches:
       - master
-      - qa-tests
+      - qa-tests   
 
 jobs:
   qa-tests:
@@ -66,7 +67,7 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: Karate Test Results
-          path: test-results/surefire-reports/*.xml
+          path: test-results/*.xml
           reporter: java-junit
           fail-on-error: false    
 
