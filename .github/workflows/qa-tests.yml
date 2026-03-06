@@ -6,7 +6,6 @@ on:
     branches:
       - master
       - qa-tests
-      - qa-tests-runner-docker
   pull_request:
     branches:
       - master
@@ -46,13 +45,10 @@ jobs:
         run: |
           $COMPOSE_CMD up --build --abort-on-container-exit --exit-code-from qa-tests
             
-      - name: Copy test results from container
+      - name: Create test-results directory
         if: always()
         run: |
           mkdir -p test-results
-          docker cp $(docker ps -aqf "name=qa-tests") \
-            /workspace/qa-tests/target/karate-reports/. \
-            test-results/ || echo "⚠️ Could not copy test results"
 
       - name: Upload Karate HTML report
         if: always()
@@ -62,19 +58,8 @@ jobs:
           path: test-results/
           retention-days: 30
 
-      - name: Publish test summary
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Karate Test Results
-          path: test-results/*.html
-          reporter: java-junit
-          fail-on-error: false    
-
-      - name: Shutdown stack
+      - name: Shutdown stack and cleanup .env
         if: always()
         run: |
-          $COMPOSE_CMD down -v
-      - name: Cleanup .env
-        if: always()
-        run: rm -f .env
+          $COMPOSE_CMD down -v --remove-orphans
+          rm -f .env

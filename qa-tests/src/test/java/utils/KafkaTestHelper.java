@@ -16,20 +16,24 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
-/**
- * Kafka Test Helper optimized with BlockingQueue & CountDownLatch
- */
 public class KafkaTestHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaTestHelper.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Thread-safe blocking queue for messages
-    private static final BlockingQueue<JsonNode> messageQueue = new LinkedBlockingQueue<>();
+    // ✅ Per-thread consumers and queues
+    private static final ConcurrentHashMap<Long, KafkaConsumer<String, String>> consumers = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, BlockingQueue<JsonNode>> queues = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, Thread> consumerThreads = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, AtomicBoolean> runningFlags = new ConcurrentHashMap<>();
 
-    private static Thread consumerThread;
-    private static KafkaConsumer<String, String> consumer;
-    private static final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private static long threadId() {
+        return Thread.currentThread().getId();
+    }
+
+    private static BlockingQueue<JsonNode> getQueue() {
+        return queues.computeIfAbsent(threadId(), id -> new LinkedBlockingQueue<>());
+    }
 
     private static void ensureTopicExists(String bootstrapServers, String topic) {
         Properties adminProps = new Properties();
@@ -37,8 +41,8 @@ public class KafkaTestHelper {
         try (AdminClient admin = AdminClient.create(adminProps)) {
             Set<String> names = admin.listTopics().names().get(10, TimeUnit.SECONDS);
             if (!names.contains(topic)) {
-                admin.createTopics(Collections.singletonList(new NewTopic(topic, 1, (short) 1))).all().get(10,
-                        TimeUnit.SECONDS);
+                admin.createTopics(Collections.singletonList(
+                    new NewTopic(topic, 1, (short) 1))).all().get(10, TimeUnit.SECONDS);
                 logger.info("Created topic for tests: {}", topic);
             }
         } catch (Exception e) {
@@ -46,16 +50,19 @@ public class KafkaTestHelper {
         }
     }
 
-    /** Start Kafka consumer */
-    public static synchronized Map<String, Object> startConsumer(String bootstrapServers, String topic) {
-        if (isRunning.get()) {
-            logger.info("Kafka consumer already running");
+    /** Start Kafka consumer — one per thread */
+    public static Map<String, Object> startConsumer(String bootstrapServers, String topic) {
+        long id = threadId();
+
+        if (consumers.containsKey(id)) {
+            logger.info("Kafka consumer already running for thread {}", id);
             return Map.of("status", "already_running");
         }
 
+        // ✅ Unique group ID per thread — each consumer reads from beginning independently
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "karate-test-" + System.currentTimeMillis());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "karate-test-" + id + "-" + System.currentTimeMillis());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -63,80 +70,89 @@ public class KafkaTestHelper {
 
         ensureTopicExists(bootstrapServers, topic);
 
-        consumer = new KafkaConsumer<>(props);
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
 
-        isRunning.set(true);
-        consumerThread = new Thread(() -> consumeMessages(topic));
-        consumerThread.setDaemon(true);
-        consumerThread.start();
+        AtomicBoolean running = new AtomicBoolean(true);
+        BlockingQueue<JsonNode> queue = new LinkedBlockingQueue<>();
 
-        logger.info("Kafka consumer started successfully for topic: {}", topic);
+        consumers.put(id, consumer);
+        queues.put(id, queue);
+        runningFlags.put(id, running);
+
+        Thread thread = new Thread(() -> consumeMessages(consumer, queue, running, topic, id));
+        thread.setDaemon(true);
+        thread.start();
+        consumerThreads.put(id, thread);
+
+        logger.info("Kafka consumer started for thread {} topic: {}", id, topic);
         return Map.of("status", "started", "topic", topic);
     }
 
-    /** Kafka consumer loop */
-    private static void consumeMessages(String topic) {
-        logger.info("Kafka consumer thread started for topic: {}", topic);
+    /** Kafka consumer loop — per thread */
+    private static void consumeMessages(KafkaConsumer<String, String> consumer,
+                                         BlockingQueue<JsonNode> queue,
+                                         AtomicBoolean running,
+                                         String topic, long threadId) {
+        logger.info("Kafka consumer thread {} started for topic: {}", threadId, topic);
         try {
-            while (isRunning.get()) {
+            while (running.get()) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
                 for (ConsumerRecord<String, String> record : records) {
                     try {
                         JsonNode message = objectMapper.readTree(record.value());
-                        messageQueue.put(message); // BlockingQueue ensures thread-safety
-                        logger.debug("Consumed message: {}", message);
+                        queue.put(message);
+                        logger.debug("Thread {} consumed message: {}", threadId, message);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         return;
                     } catch (Exception e) {
-                        logger.error("Error parsing message: {}", record.value(), e);
+                        logger.error("Thread {} error parsing message: {}", threadId, record.value(), e);
                     }
                 }
             }
         } catch (Exception e) {
-            logger.error("Error in Kafka consumer thread", e);
+            logger.error("Error in Kafka consumer thread {}", threadId, e);
         } finally {
             consumer.close();
-            logger.info("Kafka consumer closed");
+            logger.info("Kafka consumer thread {} closed", threadId);
         }
     }
 
-    // ✅ waitForMessage — central method to wait for messages with a filter, using
-    // BlockingQueue and preserving non-matching messages
+    /** Central wait method — uses per-thread queue */
     private static Map<String, Object> waitForMessage(Predicate<JsonNode> filter, int timeoutMs) {
+        BlockingQueue<JsonNode> queue = getQueue();
         List<JsonNode> seen = new ArrayList<>();
         long endTime = System.currentTimeMillis() + timeoutMs;
 
         try {
             while (System.currentTimeMillis() < endTime) {
-                JsonNode message = messageQueue.poll(200, TimeUnit.MILLISECONDS);
-                if (message == null)
-                    continue;
+                JsonNode message = queue.poll(200, TimeUnit.MILLISECONDS);
+                if (message == null) continue;
 
-                logger.debug("Testing message against filter: {}", message);
                 if (filter.test(message)) {
-                    messageQueue.addAll(seen); // ✅ restore non-matching messages
-                    logger.debug("Found matching message: {}", message);
+                    queue.addAll(seen);  // ✅ restore non-matching
+                    logger.info("✅ Thread {} found matching message: {}", threadId(), message);
                     return convertJsonNodeToMap(message);
                 } else {
-                    logger.debug("Timeout — seen messages: {}", seen);
-                    seen.add(message); // ✅ collect instead of putting back immediately
+                    seen.add(message);
                 }
             }
-            messageQueue.addAll(seen); // ✅ restore on timeout too
+            queue.addAll(seen);  // ✅ restore on timeout
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            messageQueue.addAll(seen); // ✅ restore on interruption too
+            queue.addAll(seen);
             throw new RuntimeException("Interrupted while waiting for Kafka message", e);
         }
 
-        throw new RuntimeException("Kafka message not received within " + timeoutMs + "ms");
+        throw new RuntimeException("Kafka message not received within " + timeoutMs + "ms. " +
+            "Thread: " + threadId() + " Queue size: " + queue.size());
     }
 
     /** Wait for event by itemId */
     public static Map<String, Object> waitForEvent(String itemId, int timeoutMs) {
-        return waitForMessage(msg -> msg.has("payload") && msg.get("payload").has("id") &&
+        return waitForMessage(msg -> msg.has("payload") &&
+                msg.get("payload").has("itemId") &&
                 msg.get("payload").get("itemId").asText().equals(itemId), timeoutMs);
     }
 
@@ -144,8 +160,8 @@ public class KafkaTestHelper {
     public static Map<String, Object> waitForEventType(String eventType, String itemId, int timeoutMs) {
         return waitForMessage(msg -> msg.has("eventType") && msg.has("payload") &&
                 msg.get("eventType").asText().equals(eventType) &&
-                msg.get("payload").has("itemId") && msg.get("payload").get("itemId").asText().equals(itemId),
-                timeoutMs);
+                msg.get("payload").has("itemId") &&
+                msg.get("payload").get("itemId").asText().equals(itemId), timeoutMs);
     }
 
     /** Wait for event by eventType only */
@@ -154,30 +170,37 @@ public class KafkaTestHelper {
                 msg.get("eventType").asText().equals(eventType), timeoutMs);
     }
 
-    /** Clear messages */
+    /** Clear messages for current thread only */
     public static void clearMessages() {
-        messageQueue.clear();
-        logger.info("Message queue cleared");
+        getQueue().clear();
+        logger.info("Message queue cleared for thread {}", threadId());
     }
 
-    /** Stop Kafka consumer */
+    /** Stop consumer for current thread only */
     public static void stopConsumer() {
-        if (isRunning.get()) {
-            isRunning.set(false);
-            if (consumerThread != null) {
+        long id = threadId();
+        AtomicBoolean running = runningFlags.get(id);
+        if (running != null && running.get()) {
+            running.set(false);
+            Thread thread = consumerThreads.get(id);
+            if (thread != null) {
                 try {
-                    consumerThread.join(5000);
+                    thread.join(5000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
             }
-            logger.info("Kafka consumer stopped");
+            consumers.remove(id);
+            queues.remove(id);
+            consumerThreads.remove(id);
+            runningFlags.remove(id);
+            logger.info("Kafka consumer stopped for thread {}", id);
         }
     }
 
-    /** Message count */
+    /** Message count for current thread */
     public static int getMessageCount() {
-        return messageQueue.size();
+        return getQueue().size();
     }
 
     /** Convert JsonNode to Map */

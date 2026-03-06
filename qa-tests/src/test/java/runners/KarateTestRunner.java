@@ -10,7 +10,7 @@ class KarateTestRunner {
     // ✅ API tests — parallel
     @Test
     void testApiParallel() {
-        Results results = Runner.path("classpath:features").parallel(4);
+        Results results = Runner.path("classpath:features").parallel(5);
         assertEquals(0, results.getFailCount(), results.getErrorMessages());
     }
 
