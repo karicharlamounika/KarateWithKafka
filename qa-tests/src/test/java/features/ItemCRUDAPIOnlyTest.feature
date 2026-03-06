@@ -55,6 +55,11 @@ Feature: Item CRUD API chaining validation (API-only)
     And match response.item.name == itemName
     And match response.item.quantity == itemQuantity
     And match response.item.status == 'PENDING'
+    * def correlationId = (response.correlationId).trim()
+
+    # ✅ Wait for item to be in DB before GET /items
+    * def statusResponse = call read('classpath:karatehelpers/get-status.feature') { correlationId: '#(correlationId)', authHeader: '#(authHeader)' }
+    * match statusResponse.finalStatus.status == 'COMPLETED'
 
     # Step 2: Get items - validate 200 _response shape and pick an existing itemId for update/delete
     Given url baseUrl + '/items'
