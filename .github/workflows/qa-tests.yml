@@ -28,6 +28,18 @@ jobs:
             echo "Docker Compose not found on runner." >&2
             exit 1
           fi
+      
+      - name: Create .env file
+        run: |
+          cat <<EOF > .env
+          AUTH_SECRET_KEY=${{ secrets.AUTH_SECRET_KEY }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          AUTH_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/authdb
+          JOB_STATUS_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/jobstatusdb
+          ITEMS_WRITE_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/itemsdb
+          ITEMS_READ_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/itemsreaddb
+          EOF    
 
       - name: Build and run QA tests
         run: |
@@ -37,3 +49,6 @@ jobs:
         if: always()
         run: |
           $COMPOSE_CMD down -v
+      - name: Cleanup .env
+        if: always()
+        run: rm -f .env

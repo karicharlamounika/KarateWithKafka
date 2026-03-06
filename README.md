@@ -32,11 +32,11 @@ This repository includes:
 
 - **item-writer-service**
   - Kafka consumer.
-  - Applies events to SQLite write/read projection table.
+  - Applies events to postgres write/read projection table.
 
 - **item-read-service** (`:6000`)
   - Query API (read side).
-  - Returns projected item data from SQLite.
+  - Returns projected item data from Postgres.
 
 - **kafka + kafka-init**
   - Kafka broker in KRaft mode.
@@ -189,4 +189,4 @@ Pipeline behavior:
 - Default Kafka topic: `items-events`.
 - Default gateway URL: `http://localhost:8080`.
 - In Docker test profile, Karate targets `http://gateway:8080`.
-- SQLite DB path inside Docker read/write services uses mounted `/data` volume.
+- postgres DB path inside Docker read/write services uses mounted `/data` volume.

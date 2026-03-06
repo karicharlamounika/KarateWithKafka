@@ -29,28 +29,54 @@ async function runConsumer() {
 
   console.log("📝 Read-service Kafka consumer started");
 
-  await consumer.run({
+    await consumer.run({
     eachMessage: async ({ message }) => {
       const event = JSON.parse(message.value.toString());
+      const { itemId, name, quantity } = event.payload;
 
       switch (event.eventType) {
-        case "ITEM_CREATED":
-          db.run(
-            "INSERT INTO items (name, quantity) VALUES (?, ?)",
-            [event.payload.name, event.payload.quantity]
-          );
-          break;
 
-        case "ITEM_UPDATED":
-          db.run(
-            "UPDATE items SET name = ?, quantity = ? WHERE id = ?",
-            [event.payload.name, event.payload.quantity, event.payload.id]
-          );
+        case "ITEM_CREATED": {
+          try {
+            await db.query(
+              "INSERT INTO items (itemId, name, quantity) VALUES ($1, $2, $3) ON CONFLICT (itemId) DO NOTHING",
+              [itemId, name, quantity]
+            );
+            console.log(`✅ READ: ITEM_CREATED ${itemId}`);
+          } catch (error) {
+            console.error(`❌ READ: ITEM_CREATED failed ${itemId}`, error.message);
+          }
           break;
+        }
 
-        case "ITEM_DELETED":
-          db.run("DELETE FROM items WHERE id = ?", [event.payload.id]);
+        case "ITEM_UPDATED": {
+          try {
+            await db.query(
+              "UPDATE items SET name = $1, quantity = $2 WHERE itemId = $3",
+              [name, quantity, itemId]
+            );
+            console.log(`✅ READ: ITEM_UPDATED ${itemId}`);
+          } catch (error) {
+            console.error(`❌ READ: ITEM_UPDATED failed ${itemId}`, error.message);
+          }
           break;
+        }
+
+        case "ITEM_DELETED": {
+          try {
+            await db.query(
+              "DELETE FROM items WHERE itemId = $1",
+              [itemId]
+            );
+            console.log(`✅ READ: ITEM_DELETED ${itemId}`);
+          } catch (error) {
+            console.error(`❌ READ: ITEM_DELETED failed ${itemId}`, error.message);
+          }
+          break;
+        }
+
+        default:
+          console.warn(`⚠️ READ: Unknown event type: ${event.eventType}`);
       }
     },
   });

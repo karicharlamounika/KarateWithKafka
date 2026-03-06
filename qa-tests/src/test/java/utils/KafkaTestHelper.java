@@ -23,10 +23,10 @@ public class KafkaTestHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaTestHelper.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    
+
     // Thread-safe blocking queue for messages
     private static final BlockingQueue<JsonNode> messageQueue = new LinkedBlockingQueue<>();
-    
+
     private static Thread consumerThread;
     private static KafkaConsumer<String, String> consumer;
     private static final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -37,7 +37,8 @@ public class KafkaTestHelper {
         try (AdminClient admin = AdminClient.create(adminProps)) {
             Set<String> names = admin.listTopics().names().get(10, TimeUnit.SECONDS);
             if (!names.contains(topic)) {
-                admin.createTopics(Collections.singletonList(new NewTopic(topic, 1, (short) 1))).all().get(10, TimeUnit.SECONDS);
+                admin.createTopics(Collections.singletonList(new NewTopic(topic, 1, (short) 1))).all().get(10,
+                        TimeUnit.SECONDS);
                 logger.info("Created topic for tests: {}", topic);
             }
         } catch (Exception e) {
@@ -83,8 +84,8 @@ public class KafkaTestHelper {
                 for (ConsumerRecord<String, String> record : records) {
                     try {
                         JsonNode message = objectMapper.readTree(record.value());
-                        messageQueue.put(message);  // BlockingQueue ensures thread-safety
-                        logger.info("Consumed message: {}", message);
+                        messageQueue.put(message); // BlockingQueue ensures thread-safety
+                        logger.debug("Consumed message: {}", message);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         return;
@@ -101,25 +102,32 @@ public class KafkaTestHelper {
         }
     }
 
-    /** Generic wait for message with predicate using timeout */
+    // ✅ waitForMessage — central method to wait for messages with a filter, using
+    // BlockingQueue and preserving non-matching messages
     private static Map<String, Object> waitForMessage(Predicate<JsonNode> filter, int timeoutMs) {
+        List<JsonNode> seen = new ArrayList<>();
         long endTime = System.currentTimeMillis() + timeoutMs;
 
         try {
             while (System.currentTimeMillis() < endTime) {
-                JsonNode message = messageQueue.poll(200, TimeUnit.MILLISECONDS); // wait for message
-                if (message == null) continue;
+                JsonNode message = messageQueue.poll(200, TimeUnit.MILLISECONDS);
+                if (message == null)
+                    continue;
 
+                logger.debug("Testing message against filter: {}", message);
                 if (filter.test(message)) {
-                    logger.info("Found matching message: {}", message);
+                    messageQueue.addAll(seen); // ✅ restore non-matching messages
+                    logger.debug("Found matching message: {}", message);
                     return convertJsonNodeToMap(message);
                 } else {
-                    // Not matching, put it back for other waits
-                    messageQueue.put(message);
+                    logger.debug("Timeout — seen messages: {}", seen);
+                    seen.add(message); // ✅ collect instead of putting back immediately
                 }
             }
+            messageQueue.addAll(seen); // ✅ restore on timeout too
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            messageQueue.addAll(seen); // ✅ restore on interruption too
             throw new RuntimeException("Interrupted while waiting for Kafka message", e);
         }
 
@@ -127,16 +135,17 @@ public class KafkaTestHelper {
     }
 
     /** Wait for event by itemId */
-    public static Map<String, Object> waitForEvent(int itemId, int timeoutMs) {
+    public static Map<String, Object> waitForEvent(String itemId, int timeoutMs) {
         return waitForMessage(msg -> msg.has("payload") && msg.get("payload").has("id") &&
-                msg.get("payload").get("id").asInt() == itemId, timeoutMs);
+                msg.get("payload").get("itemId").asText().equals(itemId), timeoutMs);
     }
 
     /** Wait for event by eventType and itemId */
-    public static Map<String, Object> waitForEventType(String eventType, int itemId, int timeoutMs) {
+    public static Map<String, Object> waitForEventType(String eventType, String itemId, int timeoutMs) {
         return waitForMessage(msg -> msg.has("eventType") && msg.has("payload") &&
                 msg.get("eventType").asText().equals(eventType) &&
-                msg.get("payload").has("id") && msg.get("payload").get("id").asInt() == itemId, timeoutMs);
+                msg.get("payload").has("itemId") && msg.get("payload").get("itemId").asText().equals(itemId),
+                timeoutMs);
     }
 
     /** Wait for event by eventType only */

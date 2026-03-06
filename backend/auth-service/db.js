@@ -1,29 +1,26 @@
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
+const { Pool } = require("pg");
 
-// DB file inside service folder
-const dbPath = path.join(__dirname, "auth.db");
+if (!process.env.AUTH_DB_URL) {
+  throw new Error("❌ AUTH_DB_URL environment variable is required");
+}
 
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
+const db = new Pool({
+  connectionString: process.env.AUTH_DB_URL,
+});
+
+db.query(`
+  CREATE TABLE IF NOT EXISTS users (
+    id         SERIAL PRIMARY KEY,
+    firstName  TEXT NOT NULL,
+    lastName   TEXT NOT NULL,
+    email      TEXT UNIQUE NOT NULL,
+    password   TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )
+`).then(() => console.log("✅ Connected to PostgreSQL — users table ready"))
+  .catch(err => {
     console.error("❌ Failed to connect to auth DB", err);
-  } else {
-    console.log("✅ Connected to auth SQLite DB");
-  }
-});
-
-// Create users table
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firstName TEXT NOT NULL,
-      lastName TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-});
+    process.exit(1);
+  });
 
 module.exports = db;
