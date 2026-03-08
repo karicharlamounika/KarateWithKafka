@@ -10,7 +10,7 @@ const db = new Pool({
 
 db.query(`
   CREATE TABLE IF NOT EXISTS items (
-    itemId         TEXT PRIMARY KEY,
+    item_id         TEXT PRIMARY KEY,
     name       TEXT NOT NULL,
     quantity   INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()

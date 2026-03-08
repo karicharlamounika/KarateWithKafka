@@ -29,26 +29,26 @@ app.post("/register", async (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-try {
-  const hashedPassword = await bcrypt.hash(password, 10);
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  const { rows } = await db.query(
-    "INSERT INTO users (firstName, lastName, email, password) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id, firstName, lastName, email",
-    [firstName, lastName, email, hashedPassword]
-  );
+    const { rows } = await db.query(
+      "INSERT INTO users (firstName, lastName, email, password) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id, firstName, lastName, email",
+      [firstName, lastName, email, hashedPassword]
+    );
 
-  if (rows.length === 0) {
-    return res.status(409).json({ error: "User already exists" });
+    if (rows.length === 0) {
+      return res.status(409).json({ error: "User already exists" });
+    }
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: rows[0],
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
   }
-
-  res.status(201).json({
-    message: "User registered successfully",
-    user: rows[0],
-  });
-
-} catch (error) {
-  res.status(500).json({ error: "Internal Server Error" });
-}
 });
 
 // Login

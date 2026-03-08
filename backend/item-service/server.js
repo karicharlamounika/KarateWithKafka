@@ -158,7 +158,7 @@ app.delete("/items/:id", authenticateToken, async (req, res) => {
   // Check if item exists before queuing deletion
 
   const { rows } = await itemsDb.query(
-    "SELECT * FROM items WHERE itemId = $1'",
+    "SELECT * FROM items WHERE item_id = $1",
     [id]
   );
   const item = rows[0];

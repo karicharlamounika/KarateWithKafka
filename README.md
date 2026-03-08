@@ -5,7 +5,7 @@ End-to-end demo project for **event-driven microservices** with **Kafka + CQRS**
 This repository includes:
 - A Node.js backend split into focused services.
 - A Kafka event backbone (`items-events`).
-- SQLite-backed read/write persistence services.
+- postgres-backed read/write persistence services.
 - A Maven + Karate QA suite.
 - A Docker Compose stack used locally and in CI.
 
@@ -80,7 +80,7 @@ This repository includes:
 
 ## Tech Stack
 
-- **Backend**: Node.js, Express, KafkaJS, sqlite3, JWT
+- **Backend**: Node.js, Express, KafkaJS, postgres, JWT
 - **Messaging**: Apache Kafka (Confluent image)
 - **Testing**: Karate, JUnit 5, Maven
 - **Containers**: Docker, Docker Compose
@@ -152,7 +152,7 @@ mvn test -Plocal
    - `PUT /items/{id}`
    - `DELETE /items/{id}`
 3. Commands publish Kafka events.
-4. Writer consumer updates SQLite projection.
+4. Writer consumer updates postgres projection.
 5. Query current state via `GET /items`.
 
 ---

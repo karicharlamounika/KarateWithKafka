@@ -47,7 +47,7 @@ async function runConsumer() {
               [correlationId]
             );
             await itemsDb.query(
-              "INSERT INTO items (itemId, name, quantity) VALUES ($1, $2, $3) ON CONFLICT (itemId) DO NOTHING",
+              "INSERT INTO items (item_id, name, quantity) VALUES ($1, $2, $3) ON CONFLICT (item_id) DO NOTHING",
               [itemId, name, quantity]
             );
 
@@ -117,7 +117,7 @@ async function runConsumer() {
               [correlationId]
             );
             await itemsDb.query(
-              "DELETE FROM items WHERE itemId = $1",
+              "DELETE FROM items WHERE item_id = $1",
               [itemId]
             );
 

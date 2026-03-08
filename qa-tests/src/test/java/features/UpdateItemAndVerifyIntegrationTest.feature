@@ -56,8 +56,8 @@ Feature: Update Item flow with Kafka and DB verification
     And header Authorization = authHeader
     When method GET
     Then status 200
-    * def updatedItem = karate.filter(response, function(x){ return x.itemid == itemId })
+    * def updatedItem = karate.filter(response, function(x){ return x.item_id == itemId })
     * karate.log('Updated item from GET /items:', updatedItem)
     Then match updatedItem[0].name == updatedItemName
     And match updatedItem[0].quantity == updatedItemQuantity
-    And match updatedItem[0].itemid == itemId
+    And match updatedItem[0].item_id == itemId

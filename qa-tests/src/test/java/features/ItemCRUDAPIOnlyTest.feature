@@ -70,14 +70,14 @@ Feature: Item CRUD API chaining validation (API-only)
     And match firstItem ==
       """
       {
-      itemid: '#string',
+      item_id: '#string',
       name: '#string',
       quantity: '#number',
       created_at: '#string'
       }
       """
     # ✅ Pick first item from the list — guaranteed to exist in DB
-    * def itemId = firstItem.itemid
+    * def itemId = firstItem.item_id
     * karate.log('Using existing itemId for update/delete:', itemId)
 
     # Step 3: Update item — validate 202 + response shape

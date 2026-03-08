@@ -63,6 +63,6 @@ Feature: Add Item flow with Kafka and DB verification
     When method GET
     Then status 200
     * karate.log('Response from GET /items:', response)
-    * def addedItem = karate.filter(response, function(x){ return x.itemid == itemId })
+    * def addedItem = karate.filter(response, function(x){ return x.item_id == itemId })
     Then match addedItem[0].name == itemName
     And match addedItem[0].quantity == itemQuantity

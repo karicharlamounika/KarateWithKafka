@@ -39,7 +39,7 @@ async function runConsumer() {
         case "ITEM_CREATED": {
           try {
             await db.query(
-              "INSERT INTO items (itemId, name, quantity) VALUES ($1, $2, $3) ON CONFLICT (itemId) DO NOTHING",
+              "INSERT INTO items (item_id , name, quantity) VALUES ($1, $2, $3) ON CONFLICT (item_id) DO NOTHING",
               [itemId, name, quantity]
             );
             console.log(`✅ READ: ITEM_CREATED ${itemId}`);
@@ -52,7 +52,7 @@ async function runConsumer() {
         case "ITEM_UPDATED": {
           try {
             await db.query(
-              "UPDATE items SET name = $1, quantity = $2 WHERE itemId = $3",
+              "UPDATE items SET name = $1, quantity = $2 WHERE item_id = $3",
               [name, quantity, itemId]
             );
             console.log(`✅ READ: ITEM_UPDATED ${itemId}`);
@@ -65,7 +65,7 @@ async function runConsumer() {
         case "ITEM_DELETED": {
           try {
             await db.query(
-              "DELETE FROM items WHERE itemId = $1",
+              "DELETE FROM items WHERE item_id = $1",
               [itemId]
             );
             console.log(`✅ READ: ITEM_DELETED ${itemId}`);
