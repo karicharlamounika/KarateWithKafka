@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const { connectProducer, publishEvent } = require("./kafkaProducer");
 const { nanoid } = require("nanoid");
 const db = require("./db");
+const itemDb = require("./itemDb");
 
 const app = express();
 app.use(cors());
@@ -156,8 +157,8 @@ app.delete("/items/:id", authenticateToken, async (req, res) => {
 
   // Check if item exists before queuing deletion
 
-  const { rows } = await db.query(
-    "SELECT * FROM job_status WHERE item_id = $1 AND status = 'COMPLETED'",
+  const { rows } = await itemDb.query(
+    "SELECT * FROM items WHERE itemId = $1'",
     [id]
   );
   const item = rows[0];

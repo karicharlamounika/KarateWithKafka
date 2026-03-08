@@ -2,15 +2,7 @@ Feature: API negative validation
 
     Background:
         * def baseUrl = baseUrl
-        * def loginPayload = { email: '#(testUser.email)', password: '#(testUser.password)' }
-        * call read('classpath:karatehelpers/register-user.feature')
-
-        Given url baseUrl + '/auth/login'
-        And request loginPayload
-        When method POST
-        Then status 200
-        * def validToken = response.token
-        * def authHeader = 'Bearer ' + validToken
+        * def authHeader = authHeader
         * def invalidAuthHeader = 'Bearer invalidtoken123'
 
 
