@@ -8,6 +8,9 @@ Feature: Wait for Kafka event
     * def itemId = karate.get('itemId')
     * def timeout = karate.get('timeout') || 10000
     * def eventType = karate.get('eventType')
+    * karate.log('Waiting for Kafka event with itemId:', itemId.trim(), 'eventType:', eventType.trim(), 'timeout:', timeout)
+    * def itemId = itemId != null ? itemId.trim() : null
+    * def eventType = eventType != null ? eventType.trim() : null
     * def message =
     """
     eventType
@@ -16,4 +19,3 @@ Feature: Wait for Kafka event
           : KafkaTestHelper.waitForEventType(eventType, timeout))
       : KafkaTestHelper.waitForEvent(itemId, timeout)
     """
-

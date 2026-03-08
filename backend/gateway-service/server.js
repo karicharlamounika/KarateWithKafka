@@ -41,6 +41,9 @@ const itemReadProxy = createProxyMiddleware({
 // Auth routes
 app.use("/auth", authProxy);
 
+// ✅ Status check — must be BEFORE generic GET route
+app.get("/items/*/status", itemWriteProxy);
+
 // Item routes - explicit method routing
 app.get("/items*", itemReadProxy);
 app.post("/items*", itemWriteProxy);
@@ -52,6 +55,7 @@ app.listen(8080, () => {
   console.log("API Gateway running on port 8080");
   console.log(`  /auth -> ${AUTH_SERVICE_URL}`);
   console.log(`  /items (GET) -> ${ITEM_READ_SERVICE_URL}`);
+  console.log(`  /items/:id/status (GET) -> ${ITEM_SERVICE_URL}`);
   console.log(`  /items (POST/PUT/DELETE) -> ${ITEM_SERVICE_URL}`);
   console.log("========================================");
 });

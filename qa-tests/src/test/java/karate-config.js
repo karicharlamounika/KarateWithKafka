@@ -1,12 +1,10 @@
 function fn() {
-  if (env === 'local') {
-  karate.configure('logPrettyRequest', true);
-  karate.configure('logPrettyResponse', true);
-}
   var env = karate.env || 'local';
   karate.log('karate.env was:', env);
-
-  var baseUrlOverride = karate.properties['baseUrl'] || java.lang.System.getenv('BASE_URL');
+    if (env === 'local') {
+  karate.configure('logPrettyRequest', true);
+  karate.configure('logPrettyResponse', true);
+    }
 
   var config = {
     baseUrl: 'http://localhost:8080',
@@ -15,8 +13,6 @@ function fn() {
       bootstrap: 'localhost:9092',
       topic: 'items-events'
     },
-
-    readDbUrl: 'jdbc:sqlite:../backend/item-read-service/items_read.db',
 
     testUser: {
       firstName: 'Test',
@@ -27,7 +23,8 @@ function fn() {
   };
 
   // Docker & CI (same networking!)
-  if (env === 'docker' || env === 'ci') {
+  if (env === 'docker' || env === 'ci') 
+  {
     karate.log('Running in Docker-based environment');
 
     config.baseUrl = 'http://gateway:8080';
@@ -40,14 +37,10 @@ function fn() {
       password: 'Password123'
     };
 
-    // DB paths remain the same (mounted volume)
-    config.readDbUrl = 'jdbc:sqlite:/data/items_read.db';
   }
 
-  if (baseUrlOverride) {
-    config.baseUrl = baseUrlOverride;
-    karate.log('Using BASE_URL override:', config.baseUrl);
-  }
+  authData = karate.callSingle('classpath:karatehelpers/get-auth-token.feature',{ baseUrl: config.baseUrl, testUser: config.testUser });
+  config.authHeader = authData.authHeader;
 
   karate.log('Final Base URL:', config.baseUrl);
   karate.log('Kafka Bootstrap:', config.kafka.bootstrap);

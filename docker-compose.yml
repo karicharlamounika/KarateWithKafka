@@ -1,6 +1,22 @@
 version: "3.8"
 
 services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   kafka:
     image: confluentinc/cp-kafka:7.5.3
     ports:
@@ -131,7 +147,11 @@ services:
     ports:
       - "4000:4000"
     environment:
-      AUTH_SECRET_KEY: auth-secret-key
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY}
+      AUTH_DB_URL: ${AUTH_DB_URL}          
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health > /dev/null"]
       interval: 10s
@@ -143,10 +163,14 @@ services:
     ports:
       - "5000:5000"
     environment:
-      AUTH_SECRET_KEY: auth-secret-key
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY}
+      JOB_STATUS_DB_URL: ${JOB_STATUS_DB_URL}
+      ITEMS_WRITE_DB_URL: ${ITEMS_WRITE_DB_URL}
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
     depends_on:
+      postgres:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       kafka-init:
@@ -161,15 +185,15 @@ services:
     build: ./backend/item-read-service
     ports:
       - "6000:6000"
-    depends_on:
-      kafka-init:
-        condition: service_healthy
     environment:
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
-      SQLITE_DB_PATH: /data/items_read.db
-    volumes:
-      - read-db:/data
+      ITEMS_READ_DB_URL: ${ITEMS_READ_DB_URL}   
+    depends_on:
+      kafka-init:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:6000/health > /dev/null"]
       interval: 10s
@@ -181,12 +205,13 @@ services:
     environment:
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
-      SQLITE_DB_PATH: /data/items.db
+      ITEMS_WRITE_DB_URL: ${ITEMS_WRITE_DB_URL}
+      JOB_STATUS_DB_URL: ${JOB_STATUS_DB_URL}
     depends_on:
       kafka-init:
         condition: service_healthy
-    volumes:
-      - read-db:/data
+      postgres:
+        condition: service_healthy
 
   gateway:
     build: ./backend/gateway-service
@@ -215,7 +240,7 @@ services:
       KARATE_ENV: docker
       BASE_URL: http://gateway:8080
     volumes:
-      - read-db:/data
+    - ./test-results:/workspace/qa-tests/target/karate-reports    
     depends_on:
       gateway:
         condition: service_healthy
@@ -225,4 +250,5 @@ services:
         condition: service_healthy
 
 volumes:
-  read-db:
+  postgres-data:
+  test-results:

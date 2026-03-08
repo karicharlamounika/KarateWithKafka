@@ -1,0 +1,4 @@
+CREATE DATABASE authdb;
+CREATE DATABASE jobstatusdb;
+CREATE DATABASE itemsdb;
+CREATE DATABASE itemsreaddb

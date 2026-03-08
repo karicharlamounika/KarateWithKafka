@@ -11,18 +11,19 @@ app.use(cors({
 
 const PORT = 6000;
 
-// Health check
 app.get("/health", (req, res) => res.sendStatus(200));
 
-// GET /items endpoint
-app.get("/items", (req, res) => {
-  db.all("SELECT * FROM items", (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+// GET /items
+app.get("/items", async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT * FROM items");
+    res.status(200).json(rows);
+
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-// Start HTTP server
 app.listen(PORT, () =>
   console.log(`📖 Read-service running on http://localhost:${PORT}`)
 );

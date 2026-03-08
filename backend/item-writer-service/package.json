@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "kafkajs": "^2.2.4",
-    "sqlite3": "^5.1.7"
+    "pg": "^8.19.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"

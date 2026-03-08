@@ -1,15 +1,15 @@
 name: QA Tests (Docker Compose)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
       - qa-tests
-      - qa-tests-runner-docker
   pull_request:
     branches:
       - master
-      - qa-tests
+      - qa-tests   
 
 jobs:
   qa-tests:
@@ -28,12 +28,38 @@ jobs:
             echo "Docker Compose not found on runner." >&2
             exit 1
           fi
+      
+      - name: Create .env file
+        run: |
+          cat <<EOF > .env
+          AUTH_SECRET_KEY=${{ secrets.AUTH_SECRET_KEY }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          AUTH_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/authdb
+          JOB_STATUS_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/jobstatusdb
+          ITEMS_WRITE_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/itemsdb
+          ITEMS_READ_DB_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/itemsreaddb
+          EOF    
 
       - name: Build and run QA tests
         run: |
           $COMPOSE_CMD up --build --abort-on-container-exit --exit-code-from qa-tests
-
-      - name: Shutdown stack
+            
+      - name: Create test-results directory
         if: always()
         run: |
-          $COMPOSE_CMD down -v
+          mkdir -p test-results
+
+      - name: Upload Karate HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: karate-test-report-${{ github.run_number }}
+          path: test-results/
+          retention-days: 30
+
+      - name: Shutdown stack and cleanup .env
+        if: always()
+        run: |
+          $COMPOSE_CMD down -v --remove-orphans
+          rm -f .env

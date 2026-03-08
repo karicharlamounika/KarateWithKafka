@@ -8,16 +8,21 @@ const db = require("./db");
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
 const PORT = 4000;
 
-const SECRET_KEY = process.env.AUTH_SECRET_KEY || "auth-secret-key";
+if (!process.env.AUTH_SECRET_KEY) {
+  throw new Error("❌ AUTH_SECRET_KEY environment variable is required");
+}
+const SECRET_KEY = process.env.AUTH_SECRET_KEY;
 
-app.get('/health', (req, res) => {
-  res.sendStatus(200);
-});
+app.get("/health", (req, res) => res.sendStatus(200));
 
-// Register new user
+// Register
 app.post("/register", async (req, res) => {
+  if (!req.body) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
   const { firstName, lastName, email, password } = req.body;
 
   if (!firstName || !lastName || !email || !password) {
@@ -27,41 +32,57 @@ app.post("/register", async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const stmt = db.prepare(
-      "INSERT INTO users (firstName, lastName, email, password) VALUES (?, ?, ?, ?)"
+    const { rows } = await db.query(
+      "INSERT INTO users (firstName, lastName, email, password) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id, firstName, lastName, email",
+      [firstName, lastName, email, hashedPassword]
     );
-    stmt.run(firstName, lastName, email, hashedPassword, function (err) {
-      if (err) {
-        return res.status(409).json({ error: "User already exists" });
-      }
-      res.status(201).json({ message: "User registered successfully" });
+
+    if (rows.length === 0) {
+      return res.status(409).json({ error: "User already exists" });
+    }
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: rows[0],
     });
+
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// Login user
-app.post("/login", (req, res) => {
+// Login
+app.post("/login", async (req, res) => {
+  if (!req.body) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
   const { email, password } = req.body;
 
-  if (!email || !password)
+  if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
+  }
 
-  db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const { rows } = await db.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+    const user = rows[0];
+
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword)
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (!validPassword) return res.status(401).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, {
       expiresIn: "1h",
     });
 
     res.status(200).json({ token });
-  });
+
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.listen(PORT, () =>

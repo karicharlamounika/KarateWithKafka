@@ -1,23 +1,25 @@
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
+const { Pool } = require("pg");
 
-const dbPath = process.env.SQLITE_DB_PATH || path.join(__dirname, "items_read.db");
+if (!process.env.ITEMS_READ_DB_URL) {
+  throw new Error("❌ ITEMS_READ_DB_URL environment variable is required");
+}
 
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) console.error("❌ Failed to connect to read DB", err);
-  else console.log("✅ Connected to read SQLite DB");
+const db = new Pool({
+  connectionString: process.env.ITEMS_READ_DB_URL,
 });
 
-// Create table
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      quantity INTEGER NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-});
+db.query(`
+  CREATE TABLE IF NOT EXISTS items (
+    item_id         TEXT PRIMARY KEY,
+    name       TEXT NOT NULL,
+    quantity   INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )
+`).then(() => console.log("✅ Connected to PostgreSQL — items table ready"))
+  .catch(err => {
+    console.error("❌ Failed to connect to read DB", err);
+    process.exit(1);
+  });
+
 
 module.exports = db;
