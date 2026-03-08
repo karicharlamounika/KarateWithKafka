@@ -165,6 +165,7 @@ services:
     environment:
       AUTH_SECRET_KEY: ${AUTH_SECRET_KEY}
       JOB_STATUS_DB_URL: ${JOB_STATUS_DB_URL}
+      ITEMS_WRITE_DB_URL: ${ITEMS_WRITE_DB_URL}
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: items-events
     depends_on:
