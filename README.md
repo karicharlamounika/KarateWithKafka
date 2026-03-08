@@ -1,3 +1,6 @@
+##LICENSE
+MIT © Mounika Karicharla 2026
+
 # KarateWithKafka - Monorepo approach
 
 End-to-end mono repo demo project for **event-driven microservices** with **Kafka + CQRS**, validated by **Karate integration tests**.
