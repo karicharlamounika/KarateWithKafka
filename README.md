@@ -1,58 +1,68 @@
-##LICENSE
-MIT © Mounika Karicharla 2026
+# KarateWithKafka
 
-# KarateWithKafka - Monorepo approach
+> 💡 This project started as a interview task — build a Karate framework with Kafka validations. I submitted a small boilerplate at the time without fully knowing Kafka. This is the fully built version.
 
-End-to-end mono repo demo project for **event-driven microservices** with **Kafka + CQRS**, validated by **Karate integration tests**.
+End-to-end monorepo demo project for **event-driven microservices** with **Kafka + CQRS**, validated by a full **Karate integration test suite**.
 
-This repository includes:
-- A Node.js backend split into focused services.
-- A Kafka event backbone (`items-events`).
-- postgres-backed read/write persistence services.
-- A Maven + Karate QA suite.
-- A Docker Compose stack used locally and in CI.
+The backend is **tool-agnostic** — use it to build your own automation suite with any framework you choose.
+
+---
+
+## What You'll Learn
+
+- Event-driven architecture with Kafka
+- CQRS pattern (separate read/write services)
+- Async 202 pattern with correlationId and status polling
+- Testing distributed systems end-to-end
+- Parallel test execution with thread-safe Kafka consumers
+- CI/CD with Docker Compose + GitHub Actions
 
 ---
 
 ## Architecture Overview
+```
+Client → Gateway (:8080)
+           ├── /auth      → auth-service (:4000)
+           ├── /items GET → item-read-service (:6000)
+           └── /items POST | PUT | DELETE → item-service (:5000)
 
-### Services
+item-service → Kafka (items-events)
+                  ├── item-writer-service → PostgreSQL (write)
+                  └── item-read-service   → PostgreSQL (read projection)
+```
 
-- **gateway** (`:8080`)
-  - Single entry-point for clients.
-  - Proxies `/auth` to auth-service.
-  - Routes `/items`:
-    - `GET` -> item-read-service
-    - `POST | PUT | DELETE` -> item-service
+### Async 202 Pattern
 
-- **auth-service** (`:4000`)
-  - Handles user registration and login.
-  - Issues JWT tokens used by item-service.
+Every write operation returns immediately — no blocking:
+```json
+POST /items → 202
+{
+  "correlationId": "req_xxx",
+  "statusUrl": "/items/req_xxx/status",
+  "item": { "itemId": "item_xxx", "status": "PENDING" }
+}
+```
 
-- **item-service** (`:5000`)
-  - Authenticated command API (write side).
-  - Publishes domain events to Kafka topic `items-events`.
+Poll `/items/:correlationId/status` until `COMPLETED`, `FAILED`, or `PROCESSING`.
 
-- **item-writer-service**
-  - Kafka consumer.
-  - Applies events to postgres write/read projection table.
+---
 
-- **item-read-service** (`:6000`)
-  - Query API (read side).
-  - Returns projected item data from Postgres.
+## Services
 
-- **kafka + kafka-init**
-  - Kafka broker in KRaft mode.
-  - Bootstrap/init container creates required topics and verifies broker readiness.
-
-- **qa-tests**
-  - Maven + Karate test runner.
-  - Exercises end-to-end API and event-flow scenarios.
+| Service | Port | Responsibility |
+|---|---|---|
+| gateway-service | 8080 | Single entry point, proxies to all services |
+| auth-service | 4000 | JWT registration & login |
+| item-service | 5000 | Async write API + job status tracking |
+| item-writer-service | — | Kafka consumer, writes/updates/deletes items in DB |
+| item-read-service | 6000 | Kafka consumer, read projection + query API |
+| kafka | 9092 | Event backbone (KRaft mode, no Zookeeper) |
+| kafka-init | — | Creates topics and verifies broker readiness |
+| postgres | 5432 | Separate DBs: authdb, jobstatusdb, itemsdb |
 
 ---
 
 ## Repository Structure
-
 ```text
 .
 ├── .github/
@@ -83,63 +93,78 @@ This repository includes:
 
 ## Tech Stack
 
-- **Backend**: Node.js, Express, KafkaJS, postgres, JWT
-- **Messaging**: Apache Kafka (Confluent image)
-- **Testing**: Karate, JUnit 5, Maven
-- **Containers**: Docker, Docker Compose
-- **CI**: GitHub Actions
+| Layer | Technology |
+|---|---|
+| Backend | Node.js, Express, KafkaJS, pg, JWT |
+| Messaging | Apache Kafka (Confluent, KRaft mode) |
+| Database | PostgreSQL 15 |
+| Testing | Karate, JUnit 5, Maven |
+| Containers | Docker, Docker Compose |
+| CI | GitHub Actions |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Docker + Docker Compose
+- Java 21 (for running tests locally outside Docker)
+
+### Environment Setup
+
+Create a `.env` file in the root:
+```bash
+AUTH_SECRET_KEY=<64-char-hex>
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=yourpassword
+AUTH_DB_URL=postgresql://admin:yourpassword@postgres:5432/authdb
+JOB_STATUS_DB_URL=postgresql://admin:yourpassword@postgres:5432/jobstatusdb
+ITEMS_WRITE_DB_URL=postgresql://admin:yourpassword@postgres:5432/itemsdb
+ITEMS_READ_DB_URL=postgresql://admin:yourpassword@postgres:5432/itemsdb
+```
 
 ---
 
 ## Running with Docker Compose (Recommended)
 
-This is the easiest way to run the full system and tests.
-
-### 1) Build and run all services
-
+### Start full stack
 ```bash
 docker compose up --build
 ```
 
-### 2) Run QA tests in the compose stack
-
+### Run QA tests only
 ```bash
 docker compose up --build --abort-on-container-exit --exit-code-from qa-tests
 ```
 
-### 3) Stop and clean up
-
+### Stop and clean up
 ```bash
 docker compose down -v
 ```
 
 ---
 
-## Running Components Locally (Without Docker)
+## Running Locally (Without Docker)
 
-> You must run Kafka separately (or keep Kafka in Docker) and ensure services can reach `localhost:9092`.
+> Kafka must be running separately and reachable at `localhost:9092`.
 
-### Backend services
-
-Install dependencies:
-
+### Install backend dependencies
 ```bash
 cd backend
 npm install
 ```
 
-Start each service in separate terminals:
-
+### Start each service in a separate terminal
 ```bash
 cd backend/auth-service && npm run start-auth-service
 cd backend/gateway-service && npm run start-gateway-service
 cd backend/item-service && npm run start-item-service
-cd backend/item-read-service && npm run start-item-read-service && npm run consumer-item-read-service
-cd backend/item-writer-service && npm run start-item-writer-service-consumer  
+cd backend/item-read-service && npm run start-item-read-service
+cd backend/item-writer-service && npm run start-item-writer-service-consumer
 ```
 
-### QA tests
-
+### Run QA tests
 ```bash
 cd qa-tests
 mvn test -Plocal
@@ -149,47 +174,69 @@ mvn test -Plocal
 
 ## Core API Flow
 
-1. Register/login via `POST /auth/register` and `POST /auth/login` through gateway.
-2. Use returned JWT for item commands:
-   - `POST /items`
-   - `PUT /items/{id}`
-   - `DELETE /items/{id}`
-3. Commands publish Kafka events.
-4. Writer consumer updates postgres projection.
-5. Query current state via `GET /items`.
+1. Register → `POST /auth/register`
+2. Login → `POST /auth/login` → receive JWT
+3. Use JWT for item commands:
+   - Create → `POST /items`
+   - Update → `PUT /items/{id}`
+   - Delete → `DELETE /items/{id}`
+4. Each command returns `202` with `correlationId`
+5. Poll → `GET /items/{correlationId}/status` until `COMPLETED`
+6. Query → `GET /items`
 
 ---
 
-## QA Coverage
+## QA Suite
 
-The Karate suite currently includes:
+Built with **Karate + JUnit5**, running in **parallel** (4 threads) in under 10 seconds.
 
-- Add item and verify integration flow.
-- Update item and verify integration flow.
-- Delete item and verify integration flow.
-- API-only add/update/delete scenario.
+| Feature File | Type | Coverage |
+|---|---|---|
+| `AddItemAndVerifyIntegrationTest` | Integration | Add → Kafka → DB verify |
+| `UpdateItemAndVerifyIntegrationTest` | Integration | Update → Kafka → DB verify |
+| `DeleteItemAndVerifyIntegrationTest` | Integration | Delete → Kafka → DB verify |
+| `ItemCRUDAPIOnlyTest` | API Contract | Response shape & status codes |
+| `APINegativeValidationTest` | Negative | Auth, missing fields, invalid tokens |
 
-Feature files are under:
-`qa-tests/src/test/java/features/`
-
----
-
-## CI
-
-GitHub Actions workflow:
-- `.github/workflows/qa-tests.yml`
-
-Pipeline behavior:
-1. Detects available Compose command.
-2. Boots full stack with Docker Compose.
-3. Runs `qa-tests` container and uses its exit code.
-4. Always shuts down and removes volumes.
+Feature files: `qa-tests/src/test/java/features/`
 
 ---
 
-## Notes
+## Use This Backend With Any Tool
 
-- Default Kafka topic: `items-events`.
-- Default gateway URL: `http://localhost:8080`.
-- In Docker test profile, Karate targets `http://gateway:8080`.
-- postgres DB path inside Docker read/write services uses mounted `/data` volume.
+The backend is fully functional and realistic — use it to build your own test suite:
+
+| Tool | Use Case |
+|---|---|
+| 🔧 Karate *(included)* | API + Kafka integration tests |
+| 🔧 RestAssured | Java-based API testing |
+| 🔧 Playwright / Cypress | UI or API testing |
+| 🔧 PyTest | Python-based API testing |
+| 🔧 Postman / Newman | Manual + automated API testing |
+
+Perfect for building a portfolio project that demonstrates testing of real-world distributed systems.
+
+---
+
+## CI Pipeline
+
+GitHub Actions workflow: `.github/workflows/qa-tests.yml`
+
+1. Detects available Docker Compose command
+2. Creates `.env` from GitHub Secrets
+3. Boots full stack with Docker Compose
+4. Runs `qa-tests` container and captures exit code
+5. Uploads Karate HTML report as artifact
+6. Always shuts down stack and removes volumes
+
+---
+
+## Contributing
+
+Contributions are welcome — open an issue or submit a PR.
+
+---
+
+## License
+
+MIT © Mounika Karicharla 2026
