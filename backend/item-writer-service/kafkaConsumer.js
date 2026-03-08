@@ -69,43 +69,43 @@ async function runConsumer() {
         }
 
         case "ITEM_UPDATED": {
-  try {
-    // ✅ Mark PROCESSING
-    await jobStatusDb.query(
-      "UPDATE job_status SET status = 'PROCESSING', updated_at = NOW() WHERE correlation_id = $1",
-      [correlationId]
-    );
+          try {
+            // ✅ Mark PROCESSING
+            await jobStatusDb.query(
+              "UPDATE job_status SET status = 'PROCESSING', updated_at = NOW() WHERE correlation_id = $1",
+              [correlationId]
+            );
 
-    // ✅ Check rowCount — item might not exist
-    const result = await itemsDb.query(
-      "UPDATE items SET name = $1, quantity = $2 WHERE item_id = $3",
-      [name, quantity, itemId]
-    );
+            // ✅ Check rowCount — item might not exist
+            const result = await itemsDb.query(
+              "UPDATE items SET name = $1, quantity = $2 WHERE item_id = $3",
+              [name, quantity, itemId]
+            );
 
-    if (result.rowCount === 0) {
-      // ❌ Item not found — mark FAILED
-      await jobStatusDb.query(
-        "UPDATE job_status SET status = 'FAILED', error_message = $1, updated_at = NOW() WHERE correlation_id = $2",
-        [`Item not found: ${itemId}`, correlationId]
-      );
-      console.error(`❌ ITEM_UPDATED: item not found ${itemId}`);
-      break;
-    }
+            if (result.rowCount === 0) {
+              // ❌ Item not found — mark FAILED
+              await jobStatusDb.query(
+                "UPDATE job_status SET status = 'FAILED', error_message = $1, updated_at = NOW() WHERE correlation_id = $2",
+                [`Item not found: ${itemId}`, correlationId]
+              );
+              console.error(`❌ ITEM_UPDATED: item not found ${itemId}`);
+              break;
+            }
 
-    // ✅ Mark COMPLETED only if item was actually updated
-    await jobStatusDb.query(
-      "UPDATE job_status SET status = 'COMPLETED', updated_at = NOW() WHERE correlation_id = $1",
-      [correlationId]
-    );
+            // ✅ Mark COMPLETED only if item was actually updated
+            await jobStatusDb.query(
+              "UPDATE job_status SET status = 'COMPLETED', updated_at = NOW() WHERE correlation_id = $1",
+              [correlationId]
+            );
 
-    console.log(`✅ ITEM_UPDATED: ${itemId}`);
-  } catch (error) {
-    console.error(`❌ ITEM_UPDATED failed: ${itemId}`, error.message);
-    await jobStatusDb.query(
-      "UPDATE job_status SET status = 'FAILED', error_message = $1, updated_at = NOW() WHERE correlation_id = $2",
-      [error.message, correlationId]
-    );
-  }
+            console.log(`✅ ITEM_UPDATED: ${itemId}`);
+          } catch (error) {
+            console.error(`❌ ITEM_UPDATED failed: ${itemId}`, error.message);
+            await jobStatusDb.query(
+              "UPDATE job_status SET status = 'FAILED', error_message = $1, updated_at = NOW() WHERE correlation_id = $2",
+              [error.message, correlationId]
+            );
+          }
           break;
         }
 
