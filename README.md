@@ -47,6 +47,94 @@ Poll `/items/:correlationId/status` until `COMPLETED`, `FAILED`, or `PROCESSING`
 
 ---
 
+## Sequence Diagram
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant GW as gateway-service
+    participant Auth as auth-service
+    participant IS as item-service
+    participant Writer as item-writer-service
+    participant Read as item-read-service
+    participant Kafka as Kafka (items-events topic)
+    participant PGW as PostgreSQL (Write DB)
+    participant PGR as PostgreSQL (Read DB)
+
+    Note over Client,GW: Pre-requisite: Client Registers & Logins to get JWT
+
+    Note right of Client: CREATE ITEM Flow (Async 202)
+    Client->>GW: POST /items (JWT, payload)
+    GW->>Auth: Validate JWT
+    activate Auth
+    Auth-->>GW: Valid
+    deactivate Auth
+    GW->>IS: Forward Request
+    activate IS
+    IS->>PGW: Record Job Status (PENDING)
+    activate PGW
+    PGW-->>IS: OK
+    deactivate PGW
+    IS->>Kafka: Produce EVENT (ITEM_CREATED)
+    activate Kafka
+    Kafka-->>IS: Acknowledge
+    deactivate Kafka
+    IS-->>Client: 202 ACCEPTED (correlationId, statusUrl)
+    deactivate IS
+
+    Note left of Kafka: ASYNC PROCESSING
+    Kafka-)Writer: Consume EVENT (ITEM_CREATED)
+    activate Writer
+    Writer->>PGW: Update Job Status (PROCESSING)
+    activate PGW
+    PGW-->>Writer: OK
+    deactivate PGW
+    Writer->>PGW: Insert Item Data
+    activate PGW
+    PGW-->>Writer: OK
+    deactivate PGW
+    Writer->>PGW: Update Job Status (COMPLETED)
+    activate PGW
+    PGW-->>Writer: OK
+    deactivate PGW
+    deactivate Writer
+
+    Kafka-)Read: Consume EVENT (ITEM_CREATED)
+    activate Read
+    Read->>PGR: Materialize / Project Read Projection
+    activate PGR
+    PGR-->>Read: OK
+    deactivate PGR
+    deactivate Read
+
+    loop Polling until COMPLETED
+        Client->>GW: GET /items/{correlationId}/status
+        GW->>IS: Forward Request
+        activate IS
+        IS->>PGW: Query Job Status
+        activate PGW
+        PGW-->>IS: Status (PROCESSING → COMPLETED)
+        deactivate PGW
+        IS-->>Client: 200 OK (status, itemId)
+        deactivate IS
+    end
+
+    Note right of Client: QUERY ITEM Flow (CQRS Read)
+    Client->>GW: GET /items (JWT)
+    GW->>Auth: Validate JWT
+    activate Auth
+    Auth-->>GW: Valid
+    deactivate Auth
+    GW->>Read: Forward Request
+    activate Read
+    Read->>PGR: Query Read Projection
+    activate PGR
+    PGR-->>Read: OK (Item Data)
+    deactivate PGR
+    Read-->>Client: 200 OK (Item Data)
+    deactivate Read
+```
+
 ## Services
 
 | Service | Port | Responsibility |
